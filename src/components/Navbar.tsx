@@ -1,0 +1,85 @@
+
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { cn } from '@/lib/utils';
+import { GardenIcon, Cloud, SeedlingIcon, LayoutDashboard, Settings, BarChart, Menu, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useIsMobile } from '@/hooks/use-mobile';
+
+export function Navbar() {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+  const isMobile = useIsMobile();
+
+  const navItems = [
+    { name: 'Dashboard', href: '/', icon: <LayoutDashboard className="h-4 w-4 mr-2" /> },
+    { name: 'Fields', href: '/fields', icon: <GardenIcon className="h-4 w-4 mr-2" /> },
+    { name: 'Crops', href: '/crops', icon: <SeedlingIcon className="h-4 w-4 mr-2" /> },
+    { name: 'Weather', href: '/weather', icon: <Cloud className="h-4 w-4 mr-2" /> },
+    { name: 'Analytics', href: '/analytics', icon: <BarChart className="h-4 w-4 mr-2" /> },
+  ];
+
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
+  return (
+    <nav className="bg-background/80 backdrop-blur-md border-b border-border sticky top-0 z-50 transition-all duration-300">
+      <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between h-16">
+          <div className="flex items-center">
+            <Link to="/" className="flex items-center space-x-2">
+              <GardenIcon className="h-8 w-8 text-primary transition-transform hover:scale-110 duration-300" />
+              <span className="text-xl font-semibold tracking-tight">FarmLytic</span>
+            </Link>
+          </div>
+
+          {!isMobile && (
+            <div className="hidden md:flex items-center space-x-1">
+              {navItems.map((item) => (
+                <Link 
+                  key={item.name}
+                  to={item.href}
+                  className="nav-item flex items-center text-foreground/80 hover:text-foreground hover:bg-muted/50"
+                >
+                  {item.icon}
+                  {item.name}
+                </Link>
+              ))}
+            </div>
+          )}
+
+          <div className="flex items-center space-x-4">
+            <Button variant="ghost" size="icon" className="rounded-full">
+              <Settings className="h-5 w-5" />
+            </Button>
+            
+            {isMobile && (
+              <Button variant="ghost" size="icon" onClick={toggleMobileMenu}>
+                {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile menu */}
+      {isMobile && isMobileMenuOpen && (
+        <div className="md:hidden bg-background/95 backdrop-blur-md border-b border-border animate-fade-in">
+          <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+            {navItems.map((item) => (
+              <Link
+                key={item.name}
+                to={item.href}
+                className="nav-item flex items-center text-foreground/80 hover:text-foreground hover:bg-muted/50 block px-3 py-2 rounded-md text-base font-medium"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                {item.icon}
+                {item.name}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+    </nav>
+  );
+}
