@@ -1,11 +1,11 @@
-
 import React from 'react';
 import { FieldCard } from './FieldCard';
 import { WeatherWidget } from './WeatherWidget';
 import { CropManagement } from './CropManagement';
 import { FieldMetrics } from './FieldMetrics';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowUpRight, ChevronsRight, Cloud, LucideGardenIcon, Locate, SeedlingIcon, ThermometerSun } from 'lucide-react';
+import { ArrowUpRight, ChevronsRight, Cloud, Locate, ThermometerSun } from 'lucide-react';
+import { GardenIcon, SeedlingIcon } from '@/components/GardenIcon';
 import { Button } from '@/components/ui/button';
 
 // Sample data
@@ -158,7 +158,7 @@ export function Dashboard() {
               </div>
             </div>
             <div className="bg-primary/10 p-3 rounded-full">
-              <LucideGardenIcon className="h-6 w-6 text-primary" />
+              <GardenIcon className="h-6 w-6 text-primary" />
             </div>
           </CardContent>
         </Card>

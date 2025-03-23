@@ -1,8 +1,8 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { GardenIcon, Cloud, SeedlingIcon, LayoutDashboard, Settings, BarChart, Menu, X } from 'lucide-react';
+import { GardenIcon, SeedlingIcon } from '@/components/GardenIcon';
+import { Cloud, LayoutDashboard, Settings, BarChart, Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
 

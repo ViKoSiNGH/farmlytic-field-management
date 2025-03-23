@@ -1,11 +1,11 @@
-
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, CheckCircle, Clock, SeedlingIcon, Sprout } from 'lucide-react';
+import { Calendar, CheckCircle, Clock, Sprout } from 'lucide-react';
+import { SeedlingIcon } from '@/components/GardenIcon';
 
 interface CropData {
   name: string;
