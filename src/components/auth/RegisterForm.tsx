@@ -8,12 +8,15 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { Loader2 } from 'lucide-react';
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { UserRole } from '@/types/auth';
 
 interface RegisterFormValues {
   name: string;
   email: string;
   password: string;
   confirmPassword: string;
+  role: UserRole;
 }
 
 export function RegisterForm() {
@@ -28,6 +31,7 @@ export function RegisterForm() {
       email: '',
       password: '',
       confirmPassword: '',
+      role: 'farmer',
     },
   });
 
@@ -40,7 +44,7 @@ export function RegisterForm() {
     }
     
     setIsSubmitting(true);
-    const success = await register(data.name, data.email, data.password);
+    const success = await register(data.name, data.email, data.password, data.role);
     setIsSubmitting(false);
     
     if (success) {
@@ -130,6 +134,43 @@ export function RegisterForm() {
                     disabled={isSubmitting}
                     {...field}
                   />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="role"
+            render={({ field }) => (
+              <FormItem className="space-y-3">
+                <FormLabel>Role</FormLabel>
+                <FormControl>
+                  <RadioGroup
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                    className="flex flex-col space-y-1"
+                  >
+                    <FormItem className="flex items-center space-x-3 space-y-0">
+                      <FormControl>
+                        <RadioGroupItem value="farmer" />
+                      </FormControl>
+                      <FormLabel className="font-normal">Farmer</FormLabel>
+                    </FormItem>
+                    <FormItem className="flex items-center space-x-3 space-y-0">
+                      <FormControl>
+                        <RadioGroupItem value="supplier" />
+                      </FormControl>
+                      <FormLabel className="font-normal">Supplier</FormLabel>
+                    </FormItem>
+                    <FormItem className="flex items-center space-x-3 space-y-0">
+                      <FormControl>
+                        <RadioGroupItem value="specialist" />
+                      </FormControl>
+                      <FormLabel className="font-normal">Agriculture Specialist</FormLabel>
+                    </FormItem>
+                  </RadioGroup>
                 </FormControl>
                 <FormMessage />
               </FormItem>

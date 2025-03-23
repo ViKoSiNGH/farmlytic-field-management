@@ -3,8 +3,24 @@ import React, { useEffect, useState } from 'react';
 import { Layout } from '@/components/Layout';
 import { WeatherWidget } from '@/components/WeatherWidget';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Cloud, MapPin, Calendar } from 'lucide-react';
+import { Cloud, MapPin, Calendar, Search, Plus, Loader } from 'lucide-react';
 import { format } from 'date-fns';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
+
+// Type for weather data
+interface WeatherData {
+  main: string;
+  temperature: number;
+  humidity: number;
+  wind: number;
+  forecast: Array<{
+    day: string;
+    main: string;
+    temperature: number;
+  }>;
+}
 
 // Default sample data
 const defaultWeatherData = {
@@ -22,10 +38,13 @@ const defaultWeatherData = {
 };
 
 export default function Weather() {
-  const [location, setLocation] = useState('Loading...');
+  const [currentLocation, setCurrentLocation] = useState('Loading...');
   const [currentDate, setCurrentDate] = useState('');
-  const [weatherData, setWeatherData] = useState(defaultWeatherData);
+  const [weatherData, setWeatherData] = useState<WeatherData>(defaultWeatherData);
   const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [savedLocations, setSavedLocations] = useState<string[]>([]);
+  const { toast } = useToast();
 
   useEffect(() => {
     // Set current date
@@ -41,32 +60,48 @@ export default function Weather() {
         },
         error => {
           console.error('Error getting location:', error);
-          setLocation('Location unavailable');
+          setCurrentLocation('Location unavailable');
           setIsLoading(false);
+          toast({
+            title: "Location Error",
+            description: "Could not get your current location. Please search manually.",
+            variant: "destructive"
+          });
         }
       );
     } else {
-      setLocation('Geolocation not supported');
+      setCurrentLocation('Geolocation not supported');
       setIsLoading(false);
+      toast({
+        title: "Location Error",
+        description: "Your browser does not support geolocation. Please search manually.",
+        variant: "destructive"
+      });
+    }
+
+    // Load saved locations from localStorage
+    const savedLocs = localStorage.getItem('savedWeatherLocations');
+    if (savedLocs) {
+      setSavedLocations(JSON.parse(savedLocs));
     }
   }, []);
 
-  const fetchLocationName = async (latitude, longitude) => {
+  const fetchLocationName = async (latitude: number, longitude: number) => {
     try {
       // This would typically use a geocoding API, but we'll use a mock for now
-      setLocation(`${latitude.toFixed(2)}°N, ${longitude.toFixed(2)}°E`);
+      setCurrentLocation(`${latitude.toFixed(2)}°N, ${longitude.toFixed(2)}°E`);
       
       // In a real app, you would use something like:
       // const response = await fetch(`https://api.opencagedata.com/geocode/v1/json?q=${latitude}+${longitude}&key=YOUR_API_KEY`);
       // const data = await response.json();
-      // setLocation(data.results[0].formatted);
+      // setCurrentLocation(data.results[0].formatted);
     } catch (error) {
       console.error('Error fetching location name:', error);
-      setLocation(`${latitude.toFixed(2)}°N, ${longitude.toFixed(2)}°E`);
+      setCurrentLocation(`${latitude.toFixed(2)}°N, ${longitude.toFixed(2)}°E`);
     }
   };
 
-  const fetchWeatherData = async (latitude, longitude) => {
+  const fetchWeatherData = async (latitude: number, longitude: number) => {
     try {
       // This would typically use a weather API, but we'll use mock data for now
       // In a real app, you would use something like:
@@ -92,6 +127,73 @@ export default function Weather() {
     }
   };
 
+  const handleSearch = () => {
+    if (!searchQuery.trim()) {
+      toast({
+        title: "Search Error",
+        description: "Please enter a location to search",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    
+    // In a real app, you would search for the location's coordinates
+    // For this demo, we'll simulate it with random values
+    const mockLatitude = 35 + (Math.random() * 10);
+    const mockLongitude = -95 + (Math.random() * 10);
+    
+    setCurrentLocation(searchQuery);
+    fetchWeatherData(mockLatitude, mockLongitude);
+    
+    toast({
+      title: "Location Found",
+      description: `Showing weather for ${searchQuery}`,
+    });
+  };
+
+  const saveLocation = () => {
+    if (!currentLocation || currentLocation === 'Loading...' || 
+        currentLocation === 'Location unavailable' || 
+        currentLocation === 'Geolocation not supported') {
+      toast({
+        title: "Save Error",
+        description: "Cannot save current location.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (savedLocations.includes(currentLocation)) {
+      toast({
+        title: "Already Saved",
+        description: `${currentLocation} is already in your saved locations.`,
+      });
+      return;
+    }
+
+    const newSavedLocations = [...savedLocations, currentLocation];
+    setSavedLocations(newSavedLocations);
+    localStorage.setItem('savedWeatherLocations', JSON.stringify(newSavedLocations));
+    
+    toast({
+      title: "Location Saved",
+      description: `${currentLocation} has been added to your saved locations.`,
+    });
+  };
+
+  const loadSavedLocation = (location: string) => {
+    setSearchQuery(location);
+    setCurrentLocation(location);
+    setIsLoading(true);
+    
+    // Similar to search, simulate with random values
+    const mockLatitude = 35 + (Math.random() * 10);
+    const mockLongitude = -95 + (Math.random() * 10);
+    
+    fetchWeatherData(mockLatitude, mockLongitude);
+  };
+
   return (
     <Layout>
       <div className="space-y-8 animate-fade-in">
@@ -103,7 +205,51 @@ export default function Weather() {
           </div>
           <div className="flex items-center text-muted-foreground">
             <MapPin className="h-4 w-4 mr-2" />
-            <span>{location}</span>
+            <span>{currentLocation}</span>
+          </div>
+        </div>
+        
+        <div className="flex flex-col md:flex-row gap-4">
+          <div className="flex-1">
+            <div className="flex gap-2 mb-4">
+              <Input 
+                placeholder="Search location..." 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+              />
+              <Button onClick={handleSearch}>
+                <Search className="h-4 w-4 mr-2" />
+                Search
+              </Button>
+              <Button variant="outline" onClick={saveLocation}>
+                <Plus className="h-4 w-4 mr-2" />
+                Save
+              </Button>
+            </div>
+            
+            {savedLocations.length > 0 && (
+              <Card className="mb-4">
+                <CardHeader>
+                  <CardTitle className="text-sm font-medium">Saved Locations</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-wrap gap-2">
+                    {savedLocations.map((location, index) => (
+                      <Button 
+                        key={index} 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => loadSavedLocation(location)}
+                      >
+                        <MapPin className="h-3 w-3 mr-1" />
+                        {location}
+                      </Button>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
         
@@ -117,7 +263,7 @@ export default function Weather() {
           <CardContent>
             {isLoading ? (
               <div className="flex justify-center items-center h-40">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                <Loader className="h-12 w-12 animate-spin text-primary" />
               </div>
             ) : (
               <WeatherWidget data={weatherData} />

@@ -1,13 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
-
-// Define the User type
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-}
+import { User, UserRole } from '@/types/auth';
 
 // Define the AuthContext type
 interface AuthContextType {
@@ -15,8 +9,9 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<boolean>;
-  register: (name: string, email: string, password: string) => Promise<boolean>;
+  register: (name: string, email: string, password: string, role: UserRole) => Promise<boolean>;
   logout: () => void;
+  getRole: () => UserRole | null;
 }
 
 // Create the AuthContext
@@ -27,8 +22,23 @@ const MOCK_USERS = [
   {
     id: '1',
     name: 'John Farmer',
-    email: 'john@example.com',
-    password: 'password123'
+    email: 'farmer@example.com',
+    password: 'password123',
+    role: 'farmer' as UserRole
+  },
+  {
+    id: '2',
+    name: 'Sarah Supplier',
+    email: 'supplier@example.com',
+    password: 'password123',
+    role: 'supplier' as UserRole
+  },
+  {
+    id: '3',
+    name: 'Alex Specialist',
+    email: 'specialist@example.com',
+    password: 'password123',
+    role: 'specialist' as UserRole
   }
 ];
 
@@ -52,6 +62,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     setIsLoading(false);
   }, []);
+
+  // Get user role
+  const getRole = (): UserRole | null => {
+    return user ? user.role : null;
+  };
 
   // Login function
   const login = async (email: string, password: string): Promise<boolean> => {
@@ -101,7 +116,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   // Register function
-  const register = async (name: string, email: string, password: string): Promise<boolean> => {
+  const register = async (name: string, email: string, password: string, role: UserRole): Promise<boolean> => {
     // Simulate API call
     setIsLoading(true);
     try {
@@ -125,7 +140,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         id: (MOCK_USERS.length + 1).toString(),
         name,
         email,
-        password
+        password,
+        role
       };
       
       // In a real app, you would save this to a database
@@ -172,7 +188,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isLoading,
     login,
     register,
-    logout
+    logout,
+    getRole
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
