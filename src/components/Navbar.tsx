@@ -1,16 +1,27 @@
 
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { GardenIcon, SeedlingIcon } from '@/components/GardenIcon';
-import { Cloud, LayoutDashboard, Settings, BarChart, Menu, X, User } from 'lucide-react';
+import { Cloud, LayoutDashboard, Settings, BarChart, Menu, X, User, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { useAuth } from '@/hooks/use-auth';
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuLabel, 
+  DropdownMenuSeparator, 
+  DropdownMenuTrigger 
+} from '@/components/ui/dropdown-menu';
 
 export function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const isMobile = useIsMobile();
+  const { user, isAuthenticated, logout } = useAuth();
+  const navigate = useNavigate();
 
   const navItems = [
     { name: 'Dashboard', href: '/', icon: <LayoutDashboard className="h-4 w-4 mr-2" /> },
@@ -22,6 +33,12 @@ export function Navbar() {
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+    setIsMobileMenuOpen(false);
   };
 
   return (
@@ -53,16 +70,41 @@ export function Navbar() {
           <div className="flex items-center space-x-4">
             <ThemeToggle />
             
-            <Link to="/login">
-              <Button variant="outline" size="sm" className="hidden sm:flex">
-                <User className="h-4 w-4 mr-2" />
-                Login
-              </Button>
-            </Link>
-            
-            <Link to="/register" className="hidden sm:block">
-              <Button size="sm">Register</Button>
-            </Link>
+            {isAuthenticated ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="flex items-center gap-1">
+                    <User className="h-4 w-4 mr-1" />
+                    {user?.name}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem>
+                    <Settings className="h-4 w-4 mr-2" />
+                    <span>Settings</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleLogout}>
+                    <LogOut className="h-4 w-4 mr-2" />
+                    <span>Logout</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <>
+                <Link to="/login">
+                  <Button variant="outline" size="sm" className="hidden sm:flex">
+                    <User className="h-4 w-4 mr-2" />
+                    Login
+                  </Button>
+                </Link>
+                
+                <Link to="/register" className="hidden sm:block">
+                  <Button size="sm">Register</Button>
+                </Link>
+              </>
+            )}
             
             <Button variant="ghost" size="icon" className="rounded-full">
               <Settings className="h-5 w-5" />
@@ -94,23 +136,36 @@ export function Navbar() {
             ))}
             
             <div className="border-t border-border/50 my-2 pt-2">
-              <Link
-                to="/login"
-                className="nav-item flex items-center text-foreground/80 hover:text-foreground hover:bg-muted/50 block px-3 py-2 rounded-md text-base font-medium"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                <User className="h-4 w-4 mr-2" />
-                Login
-              </Link>
-              
-              <Link
-                to="/register"
-                className="nav-item flex items-center text-foreground/80 hover:text-foreground hover:bg-muted/50 block px-3 py-2 rounded-md text-base font-medium"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                <User className="h-4 w-4 mr-2" />
-                Register
-              </Link>
+              {isAuthenticated ? (
+                <Button
+                  variant="ghost"
+                  className="nav-item flex items-center text-foreground/80 hover:text-foreground hover:bg-muted/50 block w-full justify-start px-3 py-2 rounded-md text-base font-medium"
+                  onClick={handleLogout}
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Logout
+                </Button>
+              ) : (
+                <>
+                  <Link
+                    to="/login"
+                    className="nav-item flex items-center text-foreground/80 hover:text-foreground hover:bg-muted/50 block px-3 py-2 rounded-md text-base font-medium"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <User className="h-4 w-4 mr-2" />
+                    Login
+                  </Link>
+                  
+                  <Link
+                    to="/register"
+                    className="nav-item flex items-center text-foreground/80 hover:text-foreground hover:bg-muted/50 block px-3 py-2 rounded-md text-base font-medium"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <User className="h-4 w-4 mr-2" />
+                    Register
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>

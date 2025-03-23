@@ -1,11 +1,13 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/use-auth';
+import { Loader2 } from 'lucide-react';
 
 interface LoginFormValues {
   email: string;
@@ -14,6 +16,10 @@ interface LoginFormValues {
 
 export function LoginForm() {
   const { toast } = useToast();
+  const { login, isLoading } = useAuth();
+  const navigate = useNavigate();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
   const form = useForm<LoginFormValues>({
     defaultValues: {
       email: '',
@@ -21,13 +27,14 @@ export function LoginForm() {
     },
   });
 
-  const onSubmit = (data: LoginFormValues) => {
-    console.log('Login data:', data);
-    // This would be replaced with actual authentication logic
-    toast({
-      title: 'Login Successful',
-      description: 'You have been logged in',
-    });
+  const onSubmit = async (data: LoginFormValues) => {
+    setIsSubmitting(true);
+    const success = await login(data.email, data.password);
+    setIsSubmitting(false);
+    
+    if (success) {
+      navigate('/');
+    }
   };
 
   return (
@@ -50,6 +57,7 @@ export function LoginForm() {
                     placeholder="Enter your email" 
                     type="email" 
                     required 
+                    disabled={isSubmitting}
                     {...field}
                   />
                 </FormControl>
@@ -69,6 +77,7 @@ export function LoginForm() {
                     placeholder="Enter your password" 
                     type="password" 
                     required 
+                    disabled={isSubmitting}
                     {...field}
                   />
                 </FormControl>
@@ -77,7 +86,16 @@ export function LoginForm() {
             )}
           />
           
-          <Button type="submit" className="w-full">Login</Button>
+          <Button type="submit" className="w-full" disabled={isSubmitting}>
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Logging in...
+              </>
+            ) : (
+              'Login'
+            )}
+          </Button>
         </form>
       </Form>
       
@@ -88,6 +106,12 @@ export function LoginForm() {
             Register
           </Link>
         </p>
+      </div>
+      
+      <div className="pt-4 text-center border-t border-border text-sm text-muted-foreground">
+        <p>Demo Credentials</p>
+        <p>Email: john@example.com</p>
+        <p>Password: password123</p>
       </div>
     </div>
   );

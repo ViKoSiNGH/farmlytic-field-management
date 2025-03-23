@@ -1,11 +1,13 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/use-auth';
+import { Loader2 } from 'lucide-react';
 
 interface RegisterFormValues {
   name: string;
@@ -16,6 +18,10 @@ interface RegisterFormValues {
 
 export function RegisterForm() {
   const { toast } = useToast();
+  const { register } = useAuth();
+  const navigate = useNavigate();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
   const form = useForm<RegisterFormValues>({
     defaultValues: {
       name: '',
@@ -25,7 +31,7 @@ export function RegisterForm() {
     },
   });
 
-  const onSubmit = (data: RegisterFormValues) => {
+  const onSubmit = async (data: RegisterFormValues) => {
     if (data.password !== data.confirmPassword) {
       form.setError('confirmPassword', {
         message: 'Passwords do not match',
@@ -33,12 +39,13 @@ export function RegisterForm() {
       return;
     }
     
-    console.log('Register data:', data);
-    // This would be replaced with actual registration logic
-    toast({
-      title: 'Registration Successful',
-      description: 'Your account has been created',
-    });
+    setIsSubmitting(true);
+    const success = await register(data.name, data.email, data.password);
+    setIsSubmitting(false);
+    
+    if (success) {
+      navigate('/');
+    }
   };
 
   return (
@@ -60,6 +67,7 @@ export function RegisterForm() {
                   <Input 
                     placeholder="Enter your name" 
                     required 
+                    disabled={isSubmitting}
                     {...field}
                   />
                 </FormControl>
@@ -79,6 +87,7 @@ export function RegisterForm() {
                     placeholder="Enter your email" 
                     type="email" 
                     required 
+                    disabled={isSubmitting}
                     {...field}
                   />
                 </FormControl>
@@ -98,6 +107,7 @@ export function RegisterForm() {
                     placeholder="Create a password" 
                     type="password" 
                     required 
+                    disabled={isSubmitting}
                     {...field}
                   />
                 </FormControl>
@@ -117,6 +127,7 @@ export function RegisterForm() {
                     placeholder="Confirm your password" 
                     type="password" 
                     required 
+                    disabled={isSubmitting}
                     {...field}
                   />
                 </FormControl>
@@ -125,7 +136,16 @@ export function RegisterForm() {
             )}
           />
           
-          <Button type="submit" className="w-full">Register</Button>
+          <Button type="submit" className="w-full" disabled={isSubmitting}>
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Creating Account...
+              </>
+            ) : (
+              'Register'
+            )}
+          </Button>
         </form>
       </Form>
       
