@@ -1,10 +1,12 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { GardenIcon, SeedlingIcon } from '@/components/GardenIcon';
-import { Cloud, LayoutDashboard, Settings, BarChart, Menu, X } from 'lucide-react';
+import { Cloud, LayoutDashboard, Settings, BarChart, Menu, X, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 export function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
@@ -49,6 +51,19 @@ export function Navbar() {
           )}
 
           <div className="flex items-center space-x-4">
+            <ThemeToggle />
+            
+            <Link to="/login">
+              <Button variant="outline" size="sm" className="hidden sm:flex">
+                <User className="h-4 w-4 mr-2" />
+                Login
+              </Button>
+            </Link>
+            
+            <Link to="/register" className="hidden sm:block">
+              <Button size="sm">Register</Button>
+            </Link>
+            
             <Button variant="ghost" size="icon" className="rounded-full">
               <Settings className="h-5 w-5" />
             </Button>
@@ -77,6 +92,26 @@ export function Navbar() {
                 {item.name}
               </Link>
             ))}
+            
+            <div className="border-t border-border/50 my-2 pt-2">
+              <Link
+                to="/login"
+                className="nav-item flex items-center text-foreground/80 hover:text-foreground hover:bg-muted/50 block px-3 py-2 rounded-md text-base font-medium"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <User className="h-4 w-4 mr-2" />
+                Login
+              </Link>
+              
+              <Link
+                to="/register"
+                className="nav-item flex items-center text-foreground/80 hover:text-foreground hover:bg-muted/50 block px-3 py-2 rounded-md text-base font-medium"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <User className="h-4 w-4 mr-2" />
+                Register
+              </Link>
+            </div>
           </div>
         </div>
       )}
