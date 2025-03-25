@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { User, UserRole } from '@/types/auth';
@@ -30,13 +29,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Set up auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        console.log('Auth state changed:', event, session);
-        setSession(session);
+      async (event, currentSession) => {
+        console.log('Auth state changed:', event, currentSession);
+        setSession(currentSession);
         
-        if (session?.user) {
+        if (currentSession?.user) {
           // Fetch the user's profile from Supabase
-          fetchUserProfile(session.user.id);
+          await fetchUserProfile(currentSession.user.id);
         } else {
           setUser(null);
         }
@@ -44,12 +43,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     );
 
     // Then check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('Initial session check:', session);
-      setSession(session);
+    supabase.auth.getSession().then(async ({ data: { session: currentSession } }) => {
+      console.log('Initial session check:', currentSession);
+      setSession(currentSession);
       
-      if (session?.user) {
-        fetchUserProfile(session.user.id);
+      if (currentSession?.user) {
+        // Fetch the user's profile from Supabase
+        await fetchUserProfile(currentSession.user.id);
       } else {
         // Check if we have a locally saved user for development
         const savedUser = localStorage.getItem('farmlytic_user');
@@ -159,38 +159,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(userWithoutPassword);
           localStorage.setItem('farmlytic_user', JSON.stringify(userWithoutPassword));
           
-          toast({
-            title: "Login Successful",
-            description: `Welcome back, ${foundUser.name}!`,
-          });
           return true;
         } else {
-          toast({
-            title: "Login Failed",
-            description: "Invalid email or password. Please try again.",
-            variant: "destructive",
-          });
           return false;
         }
       }
 
       // Supabase login successful
       if (data.user) {
-        toast({
-          title: "Login Successful",
-          description: "You have been logged in successfully!",
-        });
         return true;
       }
 
       return false;
     } catch (error) {
       console.error('Login error:', error);
-      toast({
-        title: "Login Error",
-        description: "An unexpected error occurred. Please try again.",
-        variant: "destructive",
-      });
       return false;
     } finally {
       setIsLoading(false);

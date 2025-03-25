@@ -28,12 +28,32 @@ export function LoginForm() {
   });
 
   const onSubmit = async (data: LoginFormValues) => {
-    setIsSubmitting(true);
-    const success = await login(data.email, data.password);
-    setIsSubmitting(false);
-    
-    if (success) {
-      navigate('/');
+    try {
+      setIsSubmitting(true);
+      const success = await login(data.email, data.password);
+      
+      if (success) {
+        toast({
+          title: "Login Successful",
+          description: "Welcome back!",
+        });
+        navigate('/');
+      } else {
+        toast({
+          title: "Login Failed",
+          description: "Invalid email or password. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      toast({
+        title: "Login Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -58,6 +78,7 @@ export function LoginForm() {
                     type="email" 
                     required 
                     disabled={isSubmitting}
+                    autoComplete="email"
                     {...field}
                   />
                 </FormControl>
@@ -78,6 +99,7 @@ export function LoginForm() {
                     type="password" 
                     required 
                     disabled={isSubmitting}
+                    autoComplete="current-password"
                     {...field}
                   />
                 </FormControl>
