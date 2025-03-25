@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { FarmerRequest, InventoryItem } from '@/types/auth';
-import { ShoppingBag, HelpCircle, DollarSign, Send, ArrowRight, Star, MessageCircle, Phone, Mail } from 'lucide-react';
+import { ShoppingBag, HelpCircle, DollarSign, Send, MessageCircle, Phone, Mail } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 
 interface RolePanelsProps {
