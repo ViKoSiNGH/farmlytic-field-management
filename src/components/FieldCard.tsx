@@ -23,8 +23,22 @@ export interface FieldCardProps {
 }
 
 export function FieldCard({ field, className, onDelete }: FieldCardProps) {
+  // Ensure field has all required properties with default values
+  const safeField = {
+    id: field?.id || '',
+    name: field?.name || 'Unnamed Field',
+    size: field?.size || 0,
+    unit: field?.unit || 'acres',
+    crop: field?.crop || 'Unknown',
+    plantDate: field?.plantDate || 'Not set',
+    status: field?.status || 'fallow',
+    moistureLevel: typeof field?.moistureLevel === 'number' ? field.moistureLevel : 50,
+    temperature: typeof field?.temperature === 'number' ? field.temperature : 25,
+    image: field?.image || 'https://source.unsplash.com/random/800x600/?farm,field'
+  };
+
   const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
+    switch ((status || '').toLowerCase()) {
       case 'growing':
         return 'bg-farm-green-light text-farm-green-dark';
       case 'harvesting':
@@ -53,16 +67,16 @@ export function FieldCard({ field, className, onDelete }: FieldCardProps) {
     >
       <div className="relative h-40 overflow-hidden">
         <img 
-          src={field.image} 
-          alt={field.name}
+          src={safeField.image} 
+          alt={safeField.name}
           className="w-full h-full object-cover transform transition-transform duration-500 hover:scale-105"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
         <div className="absolute bottom-4 left-4 right-4">
-          <Badge className={cn("mb-2", getStatusColor(field.status))}>
-            {field.status}
+          <Badge className={cn("mb-2", getStatusColor(safeField.status))}>
+            {safeField.status}
           </Badge>
-          <h3 className="text-xl font-semibold text-white">{field.name}</h3>
+          <h3 className="text-xl font-semibold text-white">{safeField.name}</h3>
         </div>
       </div>
       
@@ -70,29 +84,29 @@ export function FieldCard({ field, className, onDelete }: FieldCardProps) {
         <div className="flex justify-between items-center">
           <div>
             <p className="text-sm text-muted-foreground">Crop</p>
-            <p className="font-medium">{field.crop}</p>
+            <p className="font-medium">{safeField.crop}</p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Size</p>
-            <p className="font-medium">{field.size} {field.unit}</p>
+            <p className="font-medium">{safeField.size} {safeField.unit}</p>
           </div>
         </div>
         
         <div className="flex justify-between items-center gap-2">
           <div className="flex items-center text-sm">
             <CalendarIcon className="h-4 w-4 mr-1 text-muted-foreground" />
-            <span>Planted: {field.plantDate}</span>
+            <span>Planted: {safeField.plantDate}</span>
           </div>
           
           <div className="flex items-center gap-3">
             <div className="flex items-center text-sm">
-              <Droplets className={cn("h-4 w-4 mr-1", getMoistureColor(field.moistureLevel))} />
-              <span>{field.moistureLevel}%</span>
+              <Droplets className={cn("h-4 w-4 mr-1", getMoistureColor(safeField.moistureLevel))} />
+              <span>{safeField.moistureLevel}%</span>
             </div>
             
             <div className="flex items-center text-sm">
               <Thermometer className="h-4 w-4 mr-1 text-red-500" />
-              <span>{field.temperature}°C</span>
+              <span>{safeField.temperature}°C</span>
             </div>
           </div>
         </div>
@@ -108,7 +122,7 @@ export function FieldCard({ field, className, onDelete }: FieldCardProps) {
               variant="ghost" 
               size="sm" 
               className="text-destructive hover:bg-destructive/10"
-              onClick={() => onDelete(field.id)}
+              onClick={() => onDelete(safeField.id)}
             >
               <Trash2 className="h-4 w-4" />
             </Button>

@@ -6,6 +6,7 @@ export interface User {
   name: string;
   email: string;
   role: UserRole;
+  phone?: string;
 }
 
 export interface FarmerRequest {
@@ -20,6 +21,9 @@ export interface FarmerRequest {
   createdAt: Date;
   targetId?: string; // ID of the specialist or supplier
   response?: string;
+  contactPhone?: string;
+  contactEmail?: string;
+  isCustom?: boolean;
 }
 
 export interface Field {
@@ -77,4 +81,23 @@ export interface Reminder {
   completed: boolean;
   fieldId?: string;
   cropId?: string;
+}
+
+export interface ChatMessage {
+  requestId: string;
+  messages: {
+    sender: string;
+    text: string;
+    timestamp: Date;
+  }[];
+}
+
+export interface SellerProduct {
+  id: string;
+  sellerId: string;
+  sellerName: string;
+  name: string;
+  quantity: number;
+  price: number;
+  description: string;
 }
