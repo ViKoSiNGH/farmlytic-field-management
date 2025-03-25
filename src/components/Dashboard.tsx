@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { WeatherWidget } from '@/components/WeatherWidget';
@@ -10,6 +9,7 @@ import { FieldForm } from '@/components/FieldForm';
 import { RolePanels } from '@/components/RolePanels';
 import { useAuth } from '@/hooks/use-auth';
 import { useNavigate } from 'react-router-dom';
+import { adaptFieldToCardProps } from '@/utils/fieldAdapter';
 
 // Sample data for the weather widget
 const sampleWeatherData = {
@@ -36,7 +36,6 @@ export function Dashboard() {
   const [location, setLocation] = useState('');
   
   useEffect(() => {
-    // Load fields from localStorage
     const savedFields = localStorage.getItem('farmlytic_fields');
     if (savedFields) {
       try {
@@ -46,15 +45,12 @@ export function Dashboard() {
       }
     }
     
-    // Get weather for user's location
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const { latitude, longitude } = position.coords;
           setLocation(`${latitude.toFixed(2)}°N, ${longitude.toFixed(2)}°E`);
           
-          // In a real app, you would fetch real weather data here
-          // Simulate weather data based on coordinates
           setTimeout(() => {
             const mockTemp = Math.round(20 + (latitude % 10));
             setWeatherData({
@@ -200,7 +196,7 @@ export function Dashboard() {
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {fields.slice(0, 3).map((field) => (
-              <FieldCard key={field.id} field={field} />
+              <FieldCard key={field.id} field={adaptFieldToCardProps(field)} />
             ))}
           </div>
         </div>

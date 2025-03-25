@@ -9,6 +9,7 @@ import { FieldForm } from '@/components/FieldForm';
 import { Field } from '@/types/auth';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
+import { adaptFieldToCardProps } from '@/utils/fieldAdapter';
 
 export default function Fields() {
   const [fields, setFields] = useState<Field[]>([]);
@@ -130,7 +131,7 @@ export default function Fields() {
                 {filteredFields.map((field) => (
                   <FieldCard 
                     key={field.id} 
-                    field={field}
+                    field={adaptFieldToCardProps(field)}
                     onDelete={() => handleDelete(field.id)} 
                   />
                 ))}

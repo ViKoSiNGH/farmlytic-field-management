@@ -1,11 +1,11 @@
 
 import React from 'react';
 import { cn } from '@/lib/utils';
-import { CalendarIcon, Droplets, Thermometer, ArrowRight } from 'lucide-react';
+import { CalendarIcon, Droplets, Thermometer, ArrowRight, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
-interface FieldCardProps {
+export interface FieldCardProps {
   field: {
     id: string;
     name: string;
@@ -19,9 +19,10 @@ interface FieldCardProps {
     image: string;
   };
   className?: string;
+  onDelete?: (id: string) => void;
 }
 
-export function FieldCard({ field, className }: FieldCardProps) {
+export function FieldCard({ field, className, onDelete }: FieldCardProps) {
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case 'growing':
@@ -96,10 +97,23 @@ export function FieldCard({ field, className }: FieldCardProps) {
           </div>
         </div>
         
-        <Button variant="ghost" size="sm" className="w-full justify-between group">
-          View Details
-          <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-        </Button>
+        <div className="flex justify-between">
+          <Button variant="ghost" size="sm" className="justify-between group flex-1">
+            View Details
+            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+          </Button>
+          
+          {onDelete && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="text-destructive hover:bg-destructive/10"
+              onClick={() => onDelete(field.id)}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );

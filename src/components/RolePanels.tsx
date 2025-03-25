@@ -1,729 +1,731 @@
 
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Send, ThumbsUp, ThumbsDown, ShoppingCart, MessageSquare, Trash2, Plus } from 'lucide-react';
-import { UserRole, FarmerRequest, InventoryItem } from '@/types/auth';
-import { useAuth } from '@/hooks/use-auth';
+import { FarmerRequest, InventoryItem } from '@/types/auth';
+import { ShoppingBag, HelpCircle, DollarSign, Send, ArrowRight, Star } from 'lucide-react';
 
 interface RolePanelsProps {
-  role: UserRole;
+  role: 'farmer' | 'supplier' | 'specialist';
 }
 
-// Mock data
-const mockRequests: FarmerRequest[] = [
-  {
-    id: 'req-1',
-    farmerId: '1',
-    farmerName: 'John Farmer',
-    type: 'purchase',
-    item: 'NPK Fertilizer',
-    quantity: 5,
-    description: 'Need NPK fertilizer for my corn field',
-    status: 'pending',
-    createdAt: new Date('2023-05-10')
-  },
-  {
-    id: 'req-2',
-    farmerId: '1',
-    farmerName: 'John Farmer',
-    type: 'advice',
-    description: 'My tomato plants have yellow leaves. What could be the cause?',
-    status: 'pending',
-    createdAt: new Date('2023-05-15')
-  }
-];
-
-const mockInventory: InventoryItem[] = [
-  {
-    id: 'item-1',
-    type: 'fertilizer',
-    name: 'NPK Fertilizer',
-    quantity: 100,
-    unit: 'kg',
-    price: 25,
-    sellerId: '2',
-    available: true
-  },
-  {
-    id: 'item-2',
-    type: 'seed',
-    name: 'Corn Seeds',
-    quantity: 50,
-    unit: 'kg',
-    price: 15,
-    sellerId: '2',
-    available: true
-  },
-  {
-    id: 'item-3',
-    type: 'pesticide',
-    name: 'Natural Pesticide',
-    quantity: 30,
-    unit: 'liter',
-    price: 40,
-    sellerId: '2',
-    available: true
-  }
-];
-
 export function RolePanels({ role }: RolePanelsProps) {
-  const { user } = useAuth();
   const { toast } = useToast();
-  const [requests, setRequests] = useState<FarmerRequest[]>(mockRequests);
-  const [inventory, setInventory] = useState<InventoryItem[]>(mockInventory);
-  const [newRequest, setNewRequest] = useState({
+  const [activeTab, setActiveTab] = useState('buy');
+  const [requests, setRequests] = useState<FarmerRequest[]>([]);
+  const [newRequest, setNewRequest] = useState<{
+    type: 'advice' | 'purchase';
+    item?: string;
+    quantity?: number;
+    description: string;
+    targetId?: string;
+  }>({
     type: 'purchase',
     item: '',
     quantity: 1,
-    description: ''
+    description: '',
+    targetId: '',
   });
-  const [newItem, setNewItem] = useState({
-    type: 'fertilizer',
-    name: '',
-    quantity: 1,
-    unit: 'kg',
-    price: 0
-  });
-  const [responseText, setResponseText] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Farmer functions
-  const handleCreateRequest = () => {
-    if (!newRequest.description || (newRequest.type === 'purchase' && (!newRequest.item || newRequest.quantity < 1))) {
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [specialists, setSpecialists] = useState<{id: string, name: string}[]>([]);
+  const [suppliers, setSuppliers] = useState<{id: string, name: string}[]>([]);
+  
+  useEffect(() => {
+    // Load data from localStorage or use sample data
+    const savedRequests = localStorage.getItem('farmlytic_requests');
+    if (savedRequests) {
+      try {
+        // Parse and ensure dates are proper Date objects
+        const parsedRequests: FarmerRequest[] = JSON.parse(savedRequests).map((req: any) => ({
+          ...req, 
+          createdAt: new Date(req.createdAt)
+        }));
+        setRequests(parsedRequests);
+      } catch (error) {
+        console.error('Failed to parse requests:', error);
+        setRequests(getSampleRequests());
+      }
+    } else {
+      setRequests(getSampleRequests());
+    }
+    
+    // Load inventory items
+    setInventory(getSampleInventoryItems());
+    
+    // Load specialists and suppliers
+    setSpecialists([
+      { id: 'spec1', name: 'Dr. Alex Johnson' },
+      { id: 'spec2', name: 'Dr. Maria Garcia' },
+      { id: 'spec3', name: 'Dr. Robert Chen' },
+    ]);
+    
+    setSuppliers([
+      { id: 'sup1', name: 'AgriSupply Co.' },
+      { id: 'sup2', name: 'FarmWell Products' },
+      { id: 'sup3', name: 'GreenGrow Supplies' },
+    ]);
+  }, []);
+  
+  // Sample data functions
+  const getSampleRequests = (): FarmerRequest[] => {
+    return [
+      {
+        id: 'req1',
+        farmerId: 'farmer1',
+        farmerName: 'John Farmer',
+        type: 'purchase',
+        item: 'Organic Fertilizer',
+        quantity: 50,
+        description: 'Need organic fertilizer for my North Field.',
+        status: 'pending',
+        createdAt: new Date('2023-06-10'),
+        targetId: 'sup1',
+      },
+      {
+        id: 'req2',
+        farmerId: 'farmer1',
+        farmerName: 'John Farmer',
+        type: 'advice',
+        description: 'Having issues with pests in my corn field. What should I do?',
+        status: 'accepted',
+        createdAt: new Date('2023-06-05'),
+        targetId: 'spec1',
+        response: 'I recommend using organic pest control methods like neem oil spray. Happy to schedule a field visit next week.'
+      }
+    ];
+  };
+  
+  const getSampleInventoryItems = (): InventoryItem[] => {
+    return [
+      {
+        id: 'item1',
+        type: 'fertilizer',
+        name: 'Organic Compost',
+        quantity: 100,
+        unit: 'kg',
+        price: 15,
+        sellerId: 'sup1',
+        available: true
+      },
+      {
+        id: 'item2',
+        type: 'seed',
+        name: 'Heirloom Tomato Seeds',
+        quantity: 500,
+        unit: 'g',
+        price: 9.99,
+        sellerId: 'sup2',
+        available: true
+      },
+      {
+        id: 'item3',
+        type: 'pesticide',
+        name: 'Neem Oil Spray',
+        quantity: 20,
+        unit: 'l',
+        price: 25.50,
+        sellerId: 'sup1',
+        available: true
+      }
+    ];
+  };
+  
+  // Handle submitting a new request
+  const handleSubmitRequest = () => {
+    if (!newRequest.description) {
       toast({
-        title: "Validation Error",
-        description: "Please fill in all required fields",
+        title: "Missing Information",
+        description: "Please provide a description for your request.",
         variant: "destructive"
       });
       return;
     }
-
-    setIsSubmitting(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      const newReq: FarmerRequest = {
-        id: `req-${Date.now()}`,
-        farmerId: user?.id || '1',
-        farmerName: user?.name || 'Anonymous Farmer',
-        type: newRequest.type as 'advice' | 'purchase',
-        item: newRequest.type === 'purchase' ? newRequest.item : undefined,
-        quantity: newRequest.type === 'purchase' ? newRequest.quantity : undefined,
-        description: newRequest.description,
-        status: 'pending',
-        createdAt: new Date()
-      };
-      
-      setRequests([...requests, newReq]);
-      
-      setNewRequest({
-        type: 'purchase',
-        item: '',
-        quantity: 1,
-        description: ''
-      });
-      
+    if (newRequest.type === 'purchase' && !newRequest.item) {
       toast({
-        title: "Request Sent",
-        description: "Your request has been sent successfully!"
+        title: "Missing Information",
+        description: "Please select an item to purchase.",
+        variant: "destructive"
       });
-      
-      setIsSubmitting(false);
-    }, 1000);
-  };
-
-  const purchaseItem = (item: InventoryItem) => {
-    toast({
-      title: "Purchase Initiated",
-      description: `You are purchasing ${item.name}. The supplier will contact you soon.`
-    });
+      return;
+    }
     
-    // Create a purchase request
+    if (newRequest.type === 'advice' && !newRequest.targetId) {
+      toast({
+        title: "Missing Information",
+        description: "Please select a specialist for advice.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     const newReq: FarmerRequest = {
       id: `req-${Date.now()}`,
-      farmerId: user?.id || '1',
-      farmerName: user?.name || 'Anonymous Farmer',
-      type: 'purchase',
-      item: item.name,
-      quantity: 1,
-      description: `I want to purchase ${item.name}`,
+      farmerId: 'farmer1', // In a real app, this would be the current user's ID
+      farmerName: 'John Farmer', // In a real app, this would be the current user's name
+      type: newRequest.type,
+      description: newRequest.description,
       status: 'pending',
       createdAt: new Date(),
-      targetId: item.sellerId
+      targetId: newRequest.targetId,
     };
     
-    setRequests([...requests, newReq]);
-  };
-
-  // Supplier functions
-  const handleAddItem = () => {
-    if (!newItem.name || newItem.quantity < 1 || newItem.price <= 0) {
-      toast({
-        title: "Validation Error",
-        description: "Please fill in all required fields with valid values",
-        variant: "destructive"
-      });
-      return;
+    if (newRequest.type === 'purchase') {
+      newReq.item = newRequest.item;
+      newReq.quantity = newRequest.quantity;
     }
-
-    setIsSubmitting(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      const newInventoryItem: InventoryItem = {
-        id: `item-${Date.now()}`,
-        type: newItem.type as 'seed' | 'fertilizer' | 'pesticide' | 'crop' | 'waste',
-        name: newItem.name,
-        quantity: newItem.quantity,
-        unit: newItem.unit,
-        price: newItem.price,
-        sellerId: user?.id || '2',
-        available: true
-      };
-      
-      setInventory([...inventory, newInventoryItem]);
-      
-      setNewItem({
-        type: 'fertilizer',
-        name: '',
-        quantity: 1,
-        unit: 'kg',
-        price: 0
-      });
-      
-      toast({
-        title: "Item Added",
-        description: "Your item has been added to the inventory!"
-      });
-      
-      setIsSubmitting(false);
-    }, 1000);
-  };
-
-  const handleRequestResponse = (request: FarmerRequest, accepted: boolean) => {
-    const updatedRequests = requests.map(req => 
-      req.id === request.id 
-        ? { ...req, status: accepted ? 'accepted' : 'rejected', response: responseText }
-        : req
-    );
-    
+    const updatedRequests = [...requests, newReq];
     setRequests(updatedRequests);
+    localStorage.setItem('farmlytic_requests', JSON.stringify(updatedRequests));
     
-    toast({
-      title: accepted ? "Request Accepted" : "Request Rejected",
-      description: `You have ${accepted ? 'accepted' : 'rejected'} the request from ${request.farmerName}.`
+    // Reset form
+    setNewRequest({
+      type: 'purchase',
+      item: '',
+      quantity: 1,
+      description: '',
+      targetId: '',
     });
     
-    setResponseText('');
+    toast({
+      title: "Request Submitted",
+      description: newRequest.type === 'purchase' 
+        ? "Your purchase request has been sent to the supplier." 
+        : "Your advice request has been sent to the specialist."
+    });
   };
-
-  // Specialist functions
-  const sendAdvice = (request: FarmerRequest) => {
-    if (!responseText.trim()) {
+  
+  // Handle response to a request (for suppliers and specialists)
+  const handleRespondToRequest = (requestId: string, response: string, newStatus: 'accepted' | 'rejected') => {
+    if (!response) {
       toast({
-        title: "Input Required",
-        description: "Please enter your advice before submitting",
+        title: "Missing Response",
+        description: "Please provide a response message.",
         variant: "destructive"
       });
       return;
     }
     
     const updatedRequests = requests.map(req => 
-      req.id === request.id 
-        ? { ...req, status: 'accepted', response: responseText }
+      req.id === requestId 
+        ? { ...req, status: newStatus, response }
         : req
-    );
+    ) as FarmerRequest[];
     
     setRequests(updatedRequests);
+    localStorage.setItem('farmlytic_requests', JSON.stringify(updatedRequests));
     
     toast({
-      title: "Advice Sent",
-      description: `Your advice has been sent to ${request.farmerName}.`
+      title: newStatus === 'accepted' ? "Request Accepted" : "Request Rejected",
+      description: "Your response has been sent to the farmer."
     });
-    
-    setResponseText('');
   };
-
-  // Render based on role
-  if (role === 'farmer') {
-    return (
-      <div className="space-y-8">
+  
+  // Content for Farmer Role
+  const FarmerPanel = () => (
+    <Tabs defaultValue="buy" className="w-full" value={activeTab} onValueChange={setActiveTab}>
+      <TabsList className="grid grid-cols-3 mb-4">
+        <TabsTrigger value="buy">
+          <ShoppingBag className="h-4 w-4 mr-2" />
+          Buy Supplies
+        </TabsTrigger>
+        <TabsTrigger value="advice">
+          <HelpCircle className="h-4 w-4 mr-2" />
+          Get Advice
+        </TabsTrigger>
+        <TabsTrigger value="sell">
+          <DollarSign className="h-4 w-4 mr-2" />
+          Sell Products
+        </TabsTrigger>
+      </TabsList>
+      
+      <TabsContent value="buy" className="space-y-4">
         <Card>
           <CardHeader>
-            <CardTitle>Create New Request</CardTitle>
-            <CardDescription>Request supplies or specialist advice</CardDescription>
+            <CardTitle>Purchase Request</CardTitle>
+            <CardDescription>Request supplies from our trusted suppliers</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Request Type</label>
-                <Select
-                  value={newRequest.type}
-                  onValueChange={(value) => setNewRequest({...newRequest, type: value})}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="purchase">Purchase Supplies</SelectItem>
-                    <SelectItem value="advice">Request Advice</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              {newRequest.type === 'purchase' && (
-                <>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Item</label>
-                    <Input 
-                      placeholder="What do you need?" 
-                      value={newRequest.item}
-                      onChange={(e) => setNewRequest({...newRequest, item: e.target.value})}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Quantity</label>
-                    <Input 
-                      type="number" 
-                      min={1}
-                      value={newRequest.quantity}
-                      onChange={(e) => setNewRequest({...newRequest, quantity: parseInt(e.target.value) || 1})}
-                    />
-                  </div>
-                </>
-              )}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Select Item</label>
+              <Select
+                value={newRequest.item}
+                onValueChange={(value) => setNewRequest({...newRequest, type: 'purchase', item: value})}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select an item" />
+                </SelectTrigger>
+                <SelectContent>
+                  {inventory.map(item => (
+                    <SelectItem key={item.id} value={item.name}>
+                      {item.name} - ${item.price} per {item.unit}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             
-            <div>
-              <label className="block text-sm font-medium mb-1">Description</label>
-              <Textarea 
-                placeholder={newRequest.type === 'purchase' 
-                  ? "Provide details about what you need..." 
-                  : "Describe your problem or question..."
-                }
-                rows={4}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Quantity</label>
+              <Input
+                type="number"
+                min="1"
+                value={newRequest.quantity}
+                onChange={(e) => setNewRequest({...newRequest, quantity: parseInt(e.target.value) || 1})}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Additional Details</label>
+              <Textarea
+                placeholder="Describe your requirements, delivery preferences, etc."
                 value={newRequest.description}
                 onChange={(e) => setNewRequest({...newRequest, description: e.target.value})}
               />
             </div>
           </CardContent>
-          <CardFooter className="justify-end">
-            <Button onClick={handleCreateRequest} disabled={isSubmitting}>
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Sending...
-                </>
-              ) : (
-                <>
-                  <Send className="mr-2 h-4 w-4" />
-                  Send Request
-                </>
-              )}
+          <CardFooter>
+            <Button onClick={handleSubmitRequest} className="w-full">
+              <Send className="h-4 w-4 mr-2" />
+              Submit Request
             </Button>
           </CardFooter>
         </Card>
         
-        <Card>
-          <CardHeader>
-            <CardTitle>Available Supplies</CardTitle>
-            <CardDescription>Browse and purchase supplies from suppliers</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {inventory.map((item) => (
-                <div key={item.id} className="flex items-center justify-between border-b pb-3">
-                  <div>
-                    <div className="font-medium">{item.name}</div>
-                    <div className="text-sm text-muted-foreground">
-                      {item.quantity} {item.unit} available
-                    </div>
-                    <Badge variant="outline" className="mt-1">
-                      {item.type.charAt(0).toUpperCase() + item.type.slice(1)}
+        <h3 className="text-lg font-medium mt-6">Your Purchase Requests</h3>
+        <div className="space-y-4">
+          {requests
+            .filter(req => req.type === 'purchase' && req.farmerId === 'farmer1')
+            .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+            .map(req => (
+              <Card key={req.id}>
+                <CardHeader className="pb-2">
+                  <div className="flex justify-between items-center">
+                    <CardTitle className="text-lg">{req.item}</CardTitle>
+                    <Badge
+                      variant={
+                        req.status === 'accepted' ? 'default' :
+                        req.status === 'rejected' ? 'destructive' : 'outline'
+                      }
+                    >
+                      {req.status}
                     </Badge>
                   </div>
-                  <div className="text-right">
-                    <div className="font-bold">${item.price.toFixed(2)}/{item.unit}</div>
-                    <Button size="sm" variant="outline" onClick={() => purchaseItem(item)}>
-                      <ShoppingCart className="h-4 w-4 mr-1" />
-                      Purchase
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>My Requests</CardTitle>
-            <CardDescription>Track the status of your requests</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {requests
-              .filter(req => req.farmerId === (user?.id || '1'))
-              .map((request) => (
-                <div key={request.id} className="mb-4 p-4 border rounded-lg">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <Badge className={
-                        request.status === 'accepted' ? 'bg-green-500' : 
-                        request.status === 'rejected' ? 'bg-red-500' : 
-                        'bg-yellow-500'
-                      }>
-                        {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
-                      </Badge>
-                      <h4 className="font-semibold text-lg mt-1">
-                        {request.type === 'purchase' 
-                          ? `Purchase: ${request.item} (${request.quantity})`
-                          : 'Advice Request'
-                        }
-                      </h4>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {new Date(request.createdAt).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <Button variant="ghost" size="icon" onClick={() => {
-                      const updatedRequests = requests.filter(r => r.id !== request.id);
-                      setRequests(updatedRequests);
-                      toast({
-                        title: "Request Removed",
-                        description: "Your request has been removed."
-                      });
-                    }}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  <CardDescription>
+                    Requested: {req.createdAt.toLocaleDateString()}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm">Quantity: {req.quantity}</p>
+                  <p className="text-sm mt-2">{req.description}</p>
                   
-                  <p className="my-2">{request.description}</p>
-                  
-                  {request.status !== 'pending' && request.response && (
-                    <div className="mt-3 p-3 bg-muted rounded-md">
-                      <p className="text-sm font-medium">Response:</p>
-                      <p className="text-sm">{request.response}</p>
+                  {req.response && (
+                    <div className="mt-4 p-3 bg-muted rounded-md">
+                      <p className="text-sm font-medium">Supplier Response:</p>
+                      <p className="text-sm">{req.response}</p>
                     </div>
                   )}
-                </div>
-              ))}
-            
-            {requests.filter(req => req.farmerId === (user?.id || '1')).length === 0 && (
-              <p className="text-center text-muted-foreground py-4">
-                You haven't made any requests yet.
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-  
-  if (role === 'supplier') {
-    return (
-      <div className="space-y-8">
+                </CardContent>
+              </Card>
+            ))}
+          
+          {requests.filter(req => req.type === 'purchase' && req.farmerId === 'farmer1').length === 0 && (
+            <p className="text-center text-muted-foreground py-6">No purchase requests yet. Submit your first request above.</p>
+          )}
+        </div>
+      </TabsContent>
+      
+      <TabsContent value="advice" className="space-y-4">
         <Card>
           <CardHeader>
-            <CardTitle>Add New Item</CardTitle>
-            <CardDescription>Add new products to your inventory</CardDescription>
+            <CardTitle>Request Advice</CardTitle>
+            <CardDescription>Get expert advice from agricultural specialists</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Item Type</label>
-                <Select
-                  value={newItem.type}
-                  onValueChange={(value) => setNewItem({...newItem, type: value})}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="seed">Seeds</SelectItem>
-                    <SelectItem value="fertilizer">Fertilizer</SelectItem>
-                    <SelectItem value="pesticide">Pesticide</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium mb-1">Name</label>
-                <Input 
-                  placeholder="Product name" 
-                  value={newItem.name}
-                  onChange={(e) => setNewItem({...newItem, name: e.target.value})}
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium mb-1">Quantity</label>
-                <Input 
-                  type="number" 
-                  min={1}
-                  value={newItem.quantity}
-                  onChange={(e) => setNewItem({...newItem, quantity: parseInt(e.target.value) || 1})}
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium mb-1">Unit</label>
-                <Select
-                  value={newItem.unit}
-                  onValueChange={(value) => setNewItem({...newItem, unit: value})}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select unit" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="kg">Kilograms (kg)</SelectItem>
-                    <SelectItem value="g">Grams (g)</SelectItem>
-                    <SelectItem value="liter">Liters (L)</SelectItem>
-                    <SelectItem value="packet">Packets</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium mb-1">Price per unit ($)</label>
-                <Input 
-                  type="number" 
-                  min={0}
-                  step="0.01"
-                  value={newItem.price}
-                  onChange={(e) => setNewItem({...newItem, price: parseFloat(e.target.value) || 0})}
-                />
-              </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Select Specialist</label>
+              <Select
+                value={newRequest.targetId}
+                onValueChange={(value) => setNewRequest({...newRequest, type: 'advice', targetId: value})}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a specialist" />
+                </SelectTrigger>
+                <SelectContent>
+                  {specialists.map(specialist => (
+                    <SelectItem key={specialist.id} value={specialist.id}>
+                      {specialist.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Describe Your Issue</label>
+              <Textarea
+                placeholder="Explain the problem you're facing or the advice you need..."
+                value={newRequest.description}
+                onChange={(e) => setNewRequest({...newRequest, description: e.target.value})}
+              />
             </div>
           </CardContent>
-          <CardFooter className="justify-end">
-            <Button onClick={handleAddItem} disabled={isSubmitting}>
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Adding...
-                </>
-              ) : (
-                <>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Item
-                </>
-              )}
+          <CardFooter>
+            <Button onClick={handleSubmitRequest} className="w-full">
+              <Send className="h-4 w-4 mr-2" />
+              Request Advice
             </Button>
           </CardFooter>
         </Card>
         
-        <Card>
-          <CardHeader>
-            <CardTitle>My Inventory</CardTitle>
-            <CardDescription>Manage your available products</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {inventory
-                .filter(item => item.sellerId === (user?.id || '2'))
-                .map((item) => (
-                <div key={item.id} className="flex items-center justify-between border-b pb-3">
-                  <div>
-                    <div className="font-medium">{item.name}</div>
-                    <div className="text-sm text-muted-foreground">
-                      {item.quantity} {item.unit} available
-                    </div>
-                    <Badge variant="outline" className="mt-1">
-                      {item.type.charAt(0).toUpperCase() + item.type.slice(1)}
+        <h3 className="text-lg font-medium mt-6">Your Advice Requests</h3>
+        <div className="space-y-4">
+          {requests
+            .filter(req => req.type === 'advice' && req.farmerId === 'farmer1')
+            .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+            .map(req => (
+              <Card key={req.id}>
+                <CardHeader className="pb-2">
+                  <div className="flex justify-between items-center">
+                    <CardTitle className="text-lg">Advice Request</CardTitle>
+                    <Badge
+                      variant={
+                        req.status === 'accepted' ? 'default' :
+                        req.status === 'rejected' ? 'destructive' : 'outline'
+                      }
+                    >
+                      {req.status}
                     </Badge>
                   </div>
-                  <div className="text-right">
-                    <div className="font-bold">${item.price.toFixed(2)}/{item.unit}</div>
-                    <Button size="sm" variant="destructive" onClick={() => {
-                      const updatedInventory = inventory.filter(i => i.id !== item.id);
-                      setInventory(updatedInventory);
-                      toast({
-                        title: "Item Removed",
-                        description: `${item.name} has been removed from your inventory.`
-                      });
-                    }}>
-                      <Trash2 className="h-4 w-4 mr-1" />
-                      Remove
-                    </Button>
-                  </div>
-                </div>
-              ))}
-              
-              {inventory.filter(item => item.sellerId === (user?.id || '2')).length === 0 && (
-                <p className="text-center text-muted-foreground py-4">
-                  You haven't added any items yet.
-                </p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-        
+                  <CardDescription>
+                    Requested: {req.createdAt.toLocaleDateString()}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm">{req.description}</p>
+                  
+                  {req.response && (
+                    <div className="mt-4 p-3 bg-muted rounded-md">
+                      <p className="text-sm font-medium">Specialist Response:</p>
+                      <p className="text-sm">{req.response}</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          
+          {requests.filter(req => req.type === 'advice' && req.farmerId === 'farmer1').length === 0 && (
+            <p className="text-center text-muted-foreground py-6">No advice requests yet. Submit your first request above.</p>
+          )}
+        </div>
+      </TabsContent>
+      
+      <TabsContent value="sell" className="space-y-4">
         <Card>
           <CardHeader>
-            <CardTitle>Farmer Requests</CardTitle>
-            <CardDescription>Respond to purchase requests from farmers</CardDescription>
+            <CardTitle>Sell Your Products</CardTitle>
+            <CardDescription>List your crops and agricultural products for sale</CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {requests
-                .filter(req => req.type === 'purchase' && req.status === 'pending')
-                .map((request) => (
-                <div key={request.id} className="mb-4 p-4 border rounded-lg">
-                  <h4 className="font-semibold text-lg">
-                    Request from {request.farmerName}
-                  </h4>
-                  <p className="text-sm text-muted-foreground">
-                    {new Date(request.createdAt).toLocaleDateString()}
-                  </p>
-                  
-                  <div className="my-2">
-                    <span className="font-medium">Item:</span> {request.item} ({request.quantity})
-                  </div>
-                  
-                  <p className="my-2">{request.description}</p>
-                  
-                  <div className="mt-4">
-                    <label className="block text-sm font-medium mb-1">Response (optional)</label>
-                    <Textarea 
-                      placeholder="Add details about delivery, payment, etc..." 
-                      value={responseText}
-                      onChange={(e) => setResponseText(e.target.value)}
-                      rows={3}
-                    />
-                  </div>
-                  
-                  <div className="mt-4 flex space-x-2 justify-end">
-                    <Button 
-                      variant="outline" 
-                      onClick={() => handleRequestResponse(request, false)}
-                    >
-                      <ThumbsDown className="h-4 w-4 mr-2" />
-                      Reject
-                    </Button>
-                    <Button 
-                      onClick={() => handleRequestResponse(request, true)}
-                    >
-                      <ThumbsUp className="h-4 w-4 mr-2" />
-                      Accept
-                    </Button>
-                  </div>
-                </div>
-              ))}
-              
-              {requests.filter(req => req.type === 'purchase' && req.status === 'pending').length === 0 && (
-                <p className="text-center text-muted-foreground py-4">
-                  No pending purchase requests at the moment.
-                </p>
-              )}
-            </div>
+          <CardContent className="space-y-6">
+            <p className="text-center text-muted-foreground py-6">
+              Selling functionality coming soon! Check back later.
+            </p>
+            <Button variant="outline" className="w-full" disabled>
+              <ShoppingBag className="h-4 w-4 mr-2" />
+              Create Listing
+            </Button>
           </CardContent>
         </Card>
-      </div>
-    );
-  }
+      </TabsContent>
+    </Tabs>
+  );
   
-  if (role === 'specialist') {
-    return (
-      <div className="space-y-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>Farmer Advice Requests</CardTitle>
-            <CardDescription>Respond to farmers seeking agricultural advice</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {requests
-                .filter(req => req.type === 'advice' && req.status === 'pending')
-                .map((request) => (
-                <div key={request.id} className="mb-4 p-4 border rounded-lg">
-                  <h4 className="font-semibold text-lg">
-                    Request from {request.farmerName}
-                  </h4>
-                  <p className="text-sm text-muted-foreground">
-                    {new Date(request.createdAt).toLocaleDateString()}
-                  </p>
-                  
-                  <p className="my-2">{request.description}</p>
-                  
-                  <div className="mt-4">
-                    <label className="block text-sm font-medium mb-1">Your Advice</label>
-                    <Textarea 
-                      placeholder="Provide your professional advice..." 
-                      value={responseText}
-                      onChange={(e) => setResponseText(e.target.value)}
-                      rows={4}
-                    />
-                  </div>
-                  
-                  <div className="mt-4 flex justify-end">
-                    <Button 
-                      onClick={() => sendAdvice(request)}
-                    >
-                      <MessageSquare className="h-4 w-4 mr-2" />
-                      Send Advice
-                    </Button>
-                  </div>
-                </div>
+  // Content for Supplier Role
+  const SupplierPanel = () => (
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle>Farmer Requests</CardTitle>
+        <CardDescription>Manage purchase requests from farmers</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Tabs defaultValue="pending">
+          <TabsList className="grid grid-cols-3 mb-4">
+            <TabsTrigger value="pending">Pending</TabsTrigger>
+            <TabsTrigger value="accepted">Accepted</TabsTrigger>
+            <TabsTrigger value="rejected">Rejected</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="pending" className="space-y-4">
+            {requests
+              .filter(req => req.type === 'purchase' && req.status === 'pending')
+              .map(req => (
+                <Card key={req.id}>
+                  <CardHeader className="pb-2">
+                    <div className="flex justify-between items-center">
+                      <CardTitle className="text-lg">{req.item}</CardTitle>
+                      <Badge variant="outline">Pending</Badge>
+                    </div>
+                    <CardDescription>
+                      From: {req.farmerName} · Requested: {req.createdAt.toLocaleDateString()}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <p className="text-sm">Quantity: {req.quantity}</p>
+                    <p className="text-sm">{req.description}</p>
+                    
+                    <div className="space-y-2 pt-4">
+                      <label className="text-sm font-medium">Your Response</label>
+                      <Textarea
+                        placeholder="Enter your response..."
+                        id={`response-${req.id}`}
+                      />
+                    </div>
+                    
+                    <div className="flex space-x-2 pt-2">
+                      <Button 
+                        variant="default"
+                        className="flex-1"
+                        onClick={() => {
+                          const responseEl = document.getElementById(`response-${req.id}`) as HTMLTextAreaElement;
+                          handleRespondToRequest(req.id, responseEl.value, 'accepted');
+                        }}
+                      >
+                        Accept Request
+                      </Button>
+                      <Button 
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => {
+                          const responseEl = document.getElementById(`response-${req.id}`) as HTMLTextAreaElement;
+                          handleRespondToRequest(req.id, responseEl.value, 'rejected');
+                        }}
+                      >
+                        Reject
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
               ))}
-              
-              {requests.filter(req => req.type === 'advice' && req.status === 'pending').length === 0 && (
-                <p className="text-center text-muted-foreground py-4">
-                  No pending advice requests at the moment.
-                </p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>Previous Consultations</CardTitle>
-            <CardDescription>Review your previous advice to farmers</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {requests
-                .filter(req => req.type === 'advice' && req.status !== 'pending' && req.response)
-                .map((request) => (
-                <div key={request.id} className="mb-4 p-4 border rounded-lg">
-                  <div className="flex justify-between">
-                    <h4 className="font-semibold text-lg">
-                      Consultation with {request.farmerName}
-                    </h4>
-                    <Badge className="bg-green-500">Completed</Badge>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    {new Date(request.createdAt).toLocaleDateString()}
-                  </p>
-                  
-                  <div className="mt-3 p-3 bg-muted rounded-md">
-                    <p className="text-sm font-medium">Farmer's Question:</p>
-                    <p className="text-sm">{request.description}</p>
-                  </div>
-                  
-                  <div className="mt-3 p-3 bg-primary/10 rounded-md">
-                    <p className="text-sm font-medium">Your Advice:</p>
-                    <p className="text-sm">{request.response}</p>
-                  </div>
-                </div>
+            
+            {requests.filter(req => req.type === 'purchase' && req.status === 'pending').length === 0 && (
+              <p className="text-center text-muted-foreground py-6">No pending requests at the moment.</p>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="accepted" className="space-y-4">
+            {requests
+              .filter(req => req.type === 'purchase' && req.status === 'accepted')
+              .map(req => (
+                <Card key={req.id}>
+                  <CardHeader className="pb-2">
+                    <div className="flex justify-between items-center">
+                      <CardTitle className="text-lg">{req.item}</CardTitle>
+                      <Badge>Accepted</Badge>
+                    </div>
+                    <CardDescription>
+                      From: {req.farmerName} · Requested: {req.createdAt.toLocaleDateString()}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm">Quantity: {req.quantity}</p>
+                    <p className="text-sm">{req.description}</p>
+                    
+                    <div className="mt-4 p-3 bg-muted rounded-md">
+                      <p className="text-sm font-medium">Your Response:</p>
+                      <p className="text-sm">{req.response}</p>
+                    </div>
+                  </CardContent>
+                </Card>
               ))}
-              
-              {requests.filter(req => req.type === 'advice' && req.status !== 'pending' && req.response).length === 0 && (
-                <p className="text-center text-muted-foreground py-4">
-                  You haven't completed any consultations yet.
-                </p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+            
+            {requests.filter(req => req.type === 'purchase' && req.status === 'accepted').length === 0 && (
+              <p className="text-center text-muted-foreground py-6">No accepted requests yet.</p>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="rejected" className="space-y-4">
+            {requests
+              .filter(req => req.type === 'purchase' && req.status === 'rejected')
+              .map(req => (
+                <Card key={req.id}>
+                  <CardHeader className="pb-2">
+                    <div className="flex justify-between items-center">
+                      <CardTitle className="text-lg">{req.item}</CardTitle>
+                      <Badge variant="destructive">Rejected</Badge>
+                    </div>
+                    <CardDescription>
+                      From: {req.farmerName} · Requested: {req.createdAt.toLocaleDateString()}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm">Quantity: {req.quantity}</p>
+                    <p className="text-sm">{req.description}</p>
+                    
+                    <div className="mt-4 p-3 bg-muted rounded-md">
+                      <p className="text-sm font-medium">Your Response:</p>
+                      <p className="text-sm">{req.response}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            
+            {requests.filter(req => req.type === 'purchase' && req.status === 'rejected').length === 0 && (
+              <p className="text-center text-muted-foreground py-6">No rejected requests.</p>
+            )}
+          </TabsContent>
+        </Tabs>
+      </CardContent>
+    </Card>
+  );
   
-  return null;
+  // Content for Specialist Role
+  const SpecialistPanel = () => (
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle>Farmer Advice Requests</CardTitle>
+        <CardDescription>Provide agricultural expertise to farmers</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Tabs defaultValue="pending">
+          <TabsList className="grid grid-cols-3 mb-4">
+            <TabsTrigger value="pending">Pending</TabsTrigger>
+            <TabsTrigger value="answered">Answered</TabsTrigger>
+            <TabsTrigger value="rejected">Rejected</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="pending" className="space-y-4">
+            {requests
+              .filter(req => req.type === 'advice' && req.status === 'pending')
+              .map(req => (
+                <Card key={req.id}>
+                  <CardHeader className="pb-2">
+                    <div className="flex justify-between items-center">
+                      <CardTitle className="text-lg">Advice Request</CardTitle>
+                      <Badge variant="outline">Pending</Badge>
+                    </div>
+                    <CardDescription>
+                      From: {req.farmerName} · Requested: {req.createdAt.toLocaleDateString()}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <p className="text-sm">{req.description}</p>
+                    
+                    <div className="space-y-2 pt-4">
+                      <label className="text-sm font-medium">Your Advice</label>
+                      <Textarea
+                        placeholder="Provide your professional advice..."
+                        id={`response-${req.id}`}
+                      />
+                    </div>
+                    
+                    <div className="flex space-x-2 pt-2">
+                      <Button 
+                        variant="default"
+                        className="flex-1"
+                        onClick={() => {
+                          const responseEl = document.getElementById(`response-${req.id}`) as HTMLTextAreaElement;
+                          handleRespondToRequest(req.id, responseEl.value, 'accepted');
+                        }}
+                      >
+                        Send Advice
+                      </Button>
+                      <Button 
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => {
+                          const responseEl = document.getElementById(`response-${req.id}`) as HTMLTextAreaElement;
+                          handleRespondToRequest(req.id, responseEl.value, 'rejected');
+                        }}
+                      >
+                        Decline
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            
+            {requests.filter(req => req.type === 'advice' && req.status === 'pending').length === 0 && (
+              <p className="text-center text-muted-foreground py-6">No pending advice requests at the moment.</p>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="answered" className="space-y-4">
+            {requests
+              .filter(req => req.type === 'advice' && req.status === 'accepted')
+              .map(req => (
+                <Card key={req.id}>
+                  <CardHeader className="pb-2">
+                    <div className="flex justify-between items-center">
+                      <CardTitle className="text-lg">Advice Request</CardTitle>
+                      <Badge>Answered</Badge>
+                    </div>
+                    <CardDescription>
+                      From: {req.farmerName} · Requested: {req.createdAt.toLocaleDateString()}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm">{req.description}</p>
+                    
+                    <div className="mt-4 p-3 bg-muted rounded-md">
+                      <p className="text-sm font-medium">Your Advice:</p>
+                      <p className="text-sm">{req.response}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            
+            {requests.filter(req => req.type === 'advice' && req.status === 'accepted').length === 0 && (
+              <p className="text-center text-muted-foreground py-6">No answered requests yet.</p>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="rejected" className="space-y-4">
+            {requests
+              .filter(req => req.type === 'advice' && req.status === 'rejected')
+              .map(req => (
+                <Card key={req.id}>
+                  <CardHeader className="pb-2">
+                    <div className="flex justify-between items-center">
+                      <CardTitle className="text-lg">Advice Request</CardTitle>
+                      <Badge variant="destructive">Declined</Badge>
+                    </div>
+                    <CardDescription>
+                      From: {req.farmerName} · Requested: {req.createdAt.toLocaleDateString()}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm">{req.description}</p>
+                    
+                    <div className="mt-4 p-3 bg-muted rounded-md">
+                      <p className="text-sm font-medium">Your Response:</p>
+                      <p className="text-sm">{req.response}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            
+            {requests.filter(req => req.type === 'advice' && req.status === 'rejected').length === 0 && (
+              <p className="text-center text-muted-foreground py-6">No declined requests.</p>
+            )}
+          </TabsContent>
+        </Tabs>
+      </CardContent>
+    </Card>
+  );
+  
+  // Render the appropriate panel based on role
+  return (
+    <>
+      {role === 'farmer' && <FarmerPanel />}
+      {role === 'supplier' && <SupplierPanel />}
+      {role === 'specialist' && <SpecialistPanel />}
+    </>
+  );
 }
