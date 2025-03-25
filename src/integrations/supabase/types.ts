@@ -9,7 +9,209 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      crops: {
+        Row: {
+          created_at: string
+          expected_harvest_date: string
+          field_id: string | null
+          id: string
+          name: string
+          notes: string | null
+          planted_date: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expected_harvest_date: string
+          field_id?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          planted_date: string
+          status: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expected_harvest_date?: string
+          field_id?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          planted_date?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crops_field_id_fkey"
+            columns: ["field_id"]
+            isOneToOne: false
+            referencedRelation: "fields"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fields: {
+        Row: {
+          created_at: string
+          crops: string[] | null
+          id: string
+          image: string | null
+          location: string
+          name: string
+          size: number
+          soil_type: string | null
+          unit: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          crops?: string[] | null
+          id?: string
+          image?: string | null
+          location: string
+          name: string
+          size: number
+          soil_type?: string | null
+          unit: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          crops?: string[] | null
+          id?: string
+          image?: string | null
+          location?: string
+          name?: string
+          size?: number
+          soil_type?: string | null
+          unit?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      inventory: {
+        Row: {
+          available: boolean | null
+          created_at: string
+          id: string
+          name: string
+          price: number | null
+          quantity: number
+          type: string
+          unit: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          available?: boolean | null
+          created_at?: string
+          id?: string
+          name: string
+          price?: number | null
+          quantity: number
+          type: string
+          unit: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          available?: boolean | null
+          created_at?: string
+          id?: string
+          name?: string
+          price?: number | null
+          quantity?: number
+          type?: string
+          unit?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          name: string
+          phone: string | null
+          role: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id: string
+          name: string
+          phone?: string | null
+          role: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string
+          phone?: string | null
+          role?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      requests: {
+        Row: {
+          contact_email: string | null
+          contact_phone: string | null
+          created_at: string
+          description: string
+          farmer_id: string
+          id: string
+          is_custom: boolean | null
+          item: string | null
+          quantity: number | null
+          response: string | null
+          status: string
+          target_id: string | null
+          type: string
+        }
+        Insert: {
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          description: string
+          farmer_id: string
+          id?: string
+          is_custom?: boolean | null
+          item?: string | null
+          quantity?: number | null
+          response?: string | null
+          status?: string
+          target_id?: string | null
+          type: string
+        }
+        Update: {
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          description?: string
+          farmer_id?: string
+          id?: string
+          is_custom?: boolean | null
+          item?: string | null
+          quantity?: number | null
+          response?: string | null
+          status?: string
+          target_id?: string | null
+          type?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

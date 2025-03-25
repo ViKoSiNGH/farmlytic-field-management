@@ -2,6 +2,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { User, UserRole } from '@/types/auth';
+import { supabase } from '@/integrations/supabase/client';
+import { Session } from '@supabase/supabase-js';
 
 // Define the AuthContext type
 interface AuthContextType {
@@ -17,51 +19,89 @@ interface AuthContextType {
 // Create the AuthContext
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Mock user data for demonstration
-const MOCK_USERS = [
-  {
-    id: '1',
-    name: 'John Farmer',
-    email: 'farmer@example.com',
-    password: 'password123',
-    role: 'farmer' as UserRole
-  },
-  {
-    id: '2',
-    name: 'Sarah Supplier',
-    email: 'supplier@example.com',
-    password: 'password123',
-    role: 'supplier' as UserRole
-  },
-  {
-    id: '3',
-    name: 'Alex Specialist',
-    email: 'specialist@example.com',
-    password: 'password123',
-    role: 'specialist' as UserRole
-  }
-];
-
 // AuthProvider component
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
-  // Check for saved auth on initial load
+  // Initialize auth state
   useEffect(() => {
-    const savedUser = localStorage.getItem('farmlytic_user');
-    if (savedUser) {
-      try {
-        const parsedUser = JSON.parse(savedUser);
-        setUser(parsedUser);
-      } catch (error) {
-        console.error('Failed to parse saved user:', error);
-        localStorage.removeItem('farmlytic_user');
+    // Set up auth state listener first
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        console.log('Auth state changed:', event, session);
+        setSession(session);
+        
+        if (session?.user) {
+          // Fetch the user's profile from Supabase
+          fetchUserProfile(session.user.id);
+        } else {
+          setUser(null);
+        }
       }
-    }
-    setIsLoading(false);
+    );
+
+    // Then check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('Initial session check:', session);
+      setSession(session);
+      
+      if (session?.user) {
+        fetchUserProfile(session.user.id);
+      } else {
+        // Check if we have a locally saved user for development
+        const savedUser = localStorage.getItem('farmlytic_user');
+        if (savedUser) {
+          try {
+            const parsedUser = JSON.parse(savedUser);
+            setUser(parsedUser);
+          } catch (error) {
+            console.error('Failed to parse saved user:', error);
+            localStorage.removeItem('farmlytic_user');
+          }
+        }
+        setIsLoading(false);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
+
+  // Function to fetch user profile from Supabase
+  const fetchUserProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        console.error('Error fetching user profile:', error);
+        setIsLoading(false);
+        return;
+      }
+
+      if (data) {
+        const userProfile: User = {
+          id: data.id,
+          name: data.name,
+          email: data.email,
+          role: data.role as UserRole,
+          phone: data.phone || undefined
+        };
+        setUser(userProfile);
+      }
+    } catch (error) {
+      console.error('Failed to fetch user profile:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Get user role
   const getRole = (): UserRole | null => {
@@ -70,38 +110,80 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Login function
   const login = async (email: string, password: string): Promise<boolean> => {
-    // Simulate API call
     setIsLoading(true);
     try {
-      // In a real app, this would be an API request
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Find user with matching credentials
-      const foundUser = MOCK_USERS.find(
-        u => u.email === email && u.password === password
-      );
-      
-      if (foundUser) {
-        // Omit password from user data
-        const { password, ...userWithoutPassword } = foundUser;
+      // First try Supabase login
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        console.log('Supabase login failed, trying mock system:', error.message);
         
-        // Save user to state and localStorage
-        setUser(userWithoutPassword);
-        localStorage.setItem('farmlytic_user', JSON.stringify(userWithoutPassword));
+        // If Supabase fails, fall back to mock data for development
+        // Find user with matching credentials in mock data
+        const MOCK_USERS = [
+          {
+            id: '1',
+            name: 'John Farmer',
+            email: 'farmer@example.com',
+            password: 'password123',
+            role: 'farmer' as UserRole
+          },
+          {
+            id: '2',
+            name: 'Sarah Supplier',
+            email: 'supplier@example.com',
+            password: 'password123',
+            role: 'supplier' as UserRole
+          },
+          {
+            id: '3',
+            name: 'Alex Specialist',
+            email: 'specialist@example.com',
+            password: 'password123',
+            role: 'specialist' as UserRole
+          }
+        ];
         
+        const foundUser = MOCK_USERS.find(
+          u => u.email === email && u.password === password
+        );
+        
+        if (foundUser) {
+          // Omit password from user data
+          const { password, ...userWithoutPassword } = foundUser;
+          
+          // Save user to state and localStorage
+          setUser(userWithoutPassword);
+          localStorage.setItem('farmlytic_user', JSON.stringify(userWithoutPassword));
+          
+          toast({
+            title: "Login Successful",
+            description: `Welcome back, ${foundUser.name}!`,
+          });
+          return true;
+        } else {
+          toast({
+            title: "Login Failed",
+            description: "Invalid email or password. Please try again.",
+            variant: "destructive",
+          });
+          return false;
+        }
+      }
+
+      // Supabase login successful
+      if (data.user) {
         toast({
           title: "Login Successful",
-          description: `Welcome back, ${foundUser.name}!`,
+          description: "You have been logged in successfully!",
         });
         return true;
-      } else {
-        toast({
-          title: "Login Failed",
-          description: "Invalid email or password. Please try again.",
-          variant: "destructive",
-        });
-        return false;
       }
+
+      return false;
     } catch (error) {
       console.error('Login error:', error);
       toast({
@@ -117,48 +199,96 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Register function
   const register = async (name: string, email: string, password: string, role: UserRole): Promise<boolean> => {
-    // Simulate API call
     setIsLoading(true);
     try {
-      // In a real app, this would be an API request
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Check if user already exists
-      const existingUser = MOCK_USERS.find(u => u.email === email);
-      
-      if (existingUser) {
-        toast({
-          title: "Registration Failed",
-          description: "An account with this email already exists.",
-          variant: "destructive",
-        });
-        return false;
-      }
-      
-      // Create new user
-      const newUser = {
-        id: (MOCK_USERS.length + 1).toString(),
-        name,
+      // Register with Supabase
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        role
-      };
-      
-      // In a real app, you would save this to a database
-      MOCK_USERS.push(newUser);
-      
-      // Omit password from user data
-      const { password: _, ...userWithoutPassword } = newUser;
-      
-      // Save user to state and localStorage
-      setUser(userWithoutPassword);
-      localStorage.setItem('farmlytic_user', JSON.stringify(userWithoutPassword));
-      
-      toast({
-        title: "Registration Successful",
-        description: `Welcome to FarmLytic, ${name}!`,
+        options: {
+          data: {
+            name,
+            role
+          },
+        }
       });
-      return true;
+
+      if (error) {
+        console.log('Supabase registration failed, using mock system:', error.message);
+        
+        // If Supabase fails, fall back to mock data for development
+        // Check if user already exists in mock data
+        const MOCK_USERS = [
+          {
+            id: '1',
+            name: 'John Farmer',
+            email: 'farmer@example.com',
+            password: 'password123',
+            role: 'farmer' as UserRole
+          },
+          {
+            id: '2',
+            name: 'Sarah Supplier',
+            email: 'supplier@example.com',
+            password: 'password123',
+            role: 'supplier' as UserRole
+          },
+          {
+            id: '3',
+            name: 'Alex Specialist',
+            email: 'specialist@example.com',
+            password: 'password123',
+            role: 'specialist' as UserRole
+          }
+        ];
+        
+        const existingUser = MOCK_USERS.find(u => u.email === email);
+        
+        if (existingUser) {
+          toast({
+            title: "Registration Failed",
+            description: "An account with this email already exists.",
+            variant: "destructive",
+          });
+          return false;
+        }
+        
+        // Create new user
+        const newUser = {
+          id: (MOCK_USERS.length + 1).toString(),
+          name,
+          email,
+          password,
+          role
+        };
+        
+        // In a real app, you would save this to a database
+        MOCK_USERS.push(newUser);
+        
+        // Omit password from user data
+        const { password: _, ...userWithoutPassword } = newUser;
+        
+        // Save user to state and localStorage
+        setUser(userWithoutPassword);
+        localStorage.setItem('farmlytic_user', JSON.stringify(userWithoutPassword));
+        
+        toast({
+          title: "Registration Successful",
+          description: `Welcome to FarmLytic, ${name}!`,
+        });
+        return true;
+      }
+
+      // Supabase registration successful
+      if (data.user) {
+        toast({
+          title: "Registration Successful",
+          description: `Welcome to FarmLytic, ${name}!`,
+        });
+        return true;
+      }
+
+      return false;
     } catch (error) {
       console.error('Registration error:', error);
       toast({
@@ -173,9 +303,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   // Logout function
-  const logout = () => {
+  const logout = async () => {
+    // First try Supabase logout
+    if (session) {
+      await supabase.auth.signOut();
+    }
+    
+    // Also clear local storage
     setUser(null);
     localStorage.removeItem('farmlytic_user');
+    
     toast({
       title: "Logged Out",
       description: "You have been successfully logged out.",
