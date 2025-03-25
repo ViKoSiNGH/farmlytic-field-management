@@ -107,13 +107,6 @@ export function LoginForm() {
           </Link>
         </p>
       </div>
-      
-      <div className="pt-4 text-center border-t border-border text-sm text-muted-foreground">
-        <p>Demo Credentials</p>
-        <p>Farmer: farmer@example.com / password123</p>
-        <p>Supplier: supplier@example.com / password123</p>
-        <p>Specialist: specialist@example.com / password123</p>
-      </div>
     </div>
   );
 }
