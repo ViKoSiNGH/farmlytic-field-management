@@ -1307,7 +1307,7 @@ export function RolePanels({ role }: RolePanelsProps) {
                         Send
                       </Button>
                     </div>
-                  </CardContent>
+                  </div>
                 </CardContent>
               </Card>
             ))}
