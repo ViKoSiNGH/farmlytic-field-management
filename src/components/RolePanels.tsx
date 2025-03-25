@@ -45,6 +45,8 @@ export function RolePanels({ role }: RolePanelsProps) {
   const [suppliers, setSuppliers] = useState<{id: string, name: string}[]>([]);
   const [sellerProducts, setSellerProducts] = useState<{
     id: string;
+    sellerId?: string;
+    sellerName?: string;
     name: string;
     quantity: number;
     price: number;
@@ -66,11 +68,9 @@ export function RolePanels({ role }: RolePanelsProps) {
   }[]>([]);
   
   useEffect(() => {
-    // Load data from localStorage or use sample data
     const savedRequests = localStorage.getItem('farmlytic_requests');
     if (savedRequests) {
       try {
-        // Parse and ensure dates are proper Date objects
         const parsedRequests: FarmerRequest[] = JSON.parse(savedRequests).map((req: any) => ({
           ...req, 
           createdAt: new Date(req.createdAt)
@@ -84,10 +84,8 @@ export function RolePanels({ role }: RolePanelsProps) {
       setRequests(getSampleRequests());
     }
     
-    // Load inventory items
     setInventory(getSampleInventoryItems());
     
-    // Load specialists and suppliers
     setSpecialists([
       { id: 'spec1', name: 'Dr. Alex Johnson' },
       { id: 'spec2', name: 'Dr. Maria Garcia' },
@@ -100,7 +98,6 @@ export function RolePanels({ role }: RolePanelsProps) {
       { id: 'sup3', name: 'GreenGrow Supplies' },
     ]);
     
-    // Load chat messages
     const savedMessages = localStorage.getItem('farmlytic_chat_messages');
     if (savedMessages) {
       try {
@@ -118,7 +115,6 @@ export function RolePanels({ role }: RolePanelsProps) {
       }
     }
     
-    // Load seller products
     const savedProducts = localStorage.getItem('farmlytic_seller_products');
     if (savedProducts) {
       try {
@@ -130,7 +126,6 @@ export function RolePanels({ role }: RolePanelsProps) {
     }
   }, []);
   
-  // Sample data functions
   const getSampleRequests = (): FarmerRequest[] => {
     return [
       {
@@ -198,7 +193,6 @@ export function RolePanels({ role }: RolePanelsProps) {
     ];
   };
   
-  // Add a new chat message
   const addChatMessage = (requestId: string, sender: string, text: string) => {
     const updatedChats = [...chatMessages];
     const existingChatIndex = updatedChats.findIndex(chat => chat.requestId === requestId);
@@ -224,12 +218,10 @@ export function RolePanels({ role }: RolePanelsProps) {
     localStorage.setItem('farmlytic_chat_messages', JSON.stringify(updatedChats));
   };
   
-  // Get chat for a specific request
   const getChatForRequest = (requestId: string) => {
     return chatMessages.find(chat => chat.requestId === requestId)?.messages || [];
   };
   
-  // Handle submitting a new request
   const handleSubmitRequest = () => {
     if (!newRequest.description) {
       toast({
@@ -299,7 +291,6 @@ export function RolePanels({ role }: RolePanelsProps) {
     setRequests(updatedRequests);
     localStorage.setItem('farmlytic_requests', JSON.stringify(updatedRequests));
     
-    // Reset form
     setNewRequest({
       type: 'purchase',
       item: '',
@@ -319,7 +310,6 @@ export function RolePanels({ role }: RolePanelsProps) {
     });
   };
   
-  // Handle response to a request (for suppliers and specialists)
   const handleRespondToRequest = (requestId: string, response: string, newStatus: 'accepted' | 'rejected') => {
     if (!response) {
       toast({
@@ -339,7 +329,6 @@ export function RolePanels({ role }: RolePanelsProps) {
     setRequests(updatedRequests);
     localStorage.setItem('farmlytic_requests', JSON.stringify(updatedRequests));
     
-    // Add this as a chat message
     addChatMessage(requestId, role, response);
     
     toast({
@@ -348,7 +337,6 @@ export function RolePanels({ role }: RolePanelsProps) {
     });
   };
   
-  // Handle adding seller product
   const handleAddSellerProduct = () => {
     if (!newProduct.name || newProduct.price <= 0) {
       toast({
@@ -370,7 +358,6 @@ export function RolePanels({ role }: RolePanelsProps) {
     setSellerProducts(updatedProducts);
     localStorage.setItem('farmlytic_seller_products', JSON.stringify(updatedProducts));
     
-    // Reset form
     setNewProduct({
       name: '',
       quantity: 1,
@@ -384,7 +371,6 @@ export function RolePanels({ role }: RolePanelsProps) {
     });
   };
   
-  // Handle sending a chat message
   const handleSendChatMessage = (requestId: string, message: string) => {
     if (!message.trim()) return;
     
@@ -401,7 +387,6 @@ export function RolePanels({ role }: RolePanelsProps) {
     });
   };
   
-  // Content for Farmer Role
   const FarmerPanel = () => (
     <Tabs defaultValue="buy" className="w-full" value={activeTab} onValueChange={setActiveTab}>
       <TabsList className="grid grid-cols-3 mb-4">
@@ -572,7 +557,6 @@ export function RolePanels({ role }: RolePanelsProps) {
                     </div>
                   )}
                   
-                  {/* Chat section */}
                   {req.status !== 'pending' && (
                     <div className="mt-4 border rounded-md">
                       <div className="bg-muted p-2 rounded-t-md border-b">
@@ -747,7 +731,6 @@ export function RolePanels({ role }: RolePanelsProps) {
                     </div>
                   )}
                   
-                  {/* Chat section */}
                   {req.status !== 'pending' && (
                     <div className="mt-4 border rounded-md">
                       <div className="bg-muted p-2 rounded-t-md border-b">
@@ -885,4 +868,463 @@ export function RolePanels({ role }: RolePanelsProps) {
               </Card>
             ))}
           
-          {seller
+          {sellerProducts.filter(product => product.sellerId === (user?.id || 'farmer1')).length === 0 && (
+            <p className="text-center text-muted-foreground py-6">No products listed yet. Add your first product above.</p>
+          )}
+        </div>
+      </TabsContent>
+    </Tabs>
+  );
+  
+  const SupplierPanel = () => {
+    const [responseText, setResponseText] = useState('');
+    const [selectedRequestId, setSelectedRequestId] = useState('');
+    
+    return (
+      <Tabs defaultValue="requests" className="w-full">
+        <TabsList className="grid grid-cols-2 mb-4">
+          <TabsTrigger value="requests">
+            <ShoppingBag className="h-4 w-4 mr-2" />
+            Purchase Requests
+          </TabsTrigger>
+          <TabsTrigger value="products">
+            <DollarSign className="h-4 w-4 mr-2" />
+            My Products
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="requests" className="space-y-4">
+          <h3 className="text-lg font-medium">Pending Purchase Requests</h3>
+          <div className="space-y-4">
+            {requests
+              .filter(req => req.type === 'purchase' && req.status === 'pending')
+              .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+              .map(req => (
+                <Card key={req.id}>
+                  <CardHeader className="pb-2">
+                    <div className="flex justify-between items-center">
+                      <CardTitle className="text-lg">
+                        {req.item} {req.isCustom && <Badge variant="outline">Custom</Badge>}
+                      </CardTitle>
+                      <Badge variant="outline">Pending</Badge>
+                    </div>
+                    <CardDescription>
+                      From: {req.farmerName} | Requested: {req.createdAt.toLocaleDateString()}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <p className="text-sm">Quantity: {req.quantity}</p>
+                      <p className="text-sm mt-2">{req.description}</p>
+                    </div>
+                    
+                    <div className="bg-muted p-3 rounded-md">
+                      <p className="text-sm font-medium mb-2">Farmer Contact:</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="flex items-center">
+                          <Phone className="h-4 w-4 mr-2 text-muted-foreground" />
+                          <p className="text-sm">{req.contactPhone}</p>
+                        </div>
+                        <div className="flex items-center">
+                          <Mail className="h-4 w-4 mr-2 text-muted-foreground" />
+                          <p className="text-sm">{req.contactEmail}</p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <Textarea
+                      placeholder="Write your response here..."
+                      value={selectedRequestId === req.id ? responseText : ''}
+                      onChange={(e) => {
+                        setSelectedRequestId(req.id);
+                        setResponseText(e.target.value);
+                      }}
+                    />
+                    
+                    <div className="flex space-x-2">
+                      <Button 
+                        variant="default" 
+                        className="flex-1"
+                        onClick={() => {
+                          handleRespondToRequest(req.id, responseText || 'I can provide this item. Please contact me for details.', 'accepted');
+                          setResponseText('');
+                          setSelectedRequestId('');
+                        }}
+                      >
+                        Accept Request
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        className="flex-1"
+                        onClick={() => {
+                          handleRespondToRequest(req.id, responseText || 'Sorry, this item is currently unavailable.', 'rejected');
+                          setResponseText('');
+                          setSelectedRequestId('');
+                        }}
+                      >
+                        Reject Request
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            
+            {requests.filter(req => req.type === 'purchase' && req.status === 'pending').length === 0 && (
+              <p className="text-center text-muted-foreground py-6">No pending purchase requests.</p>
+            )}
+          </div>
+          
+          <h3 className="text-lg font-medium mt-8">Responded Requests</h3>
+          <div className="space-y-4">
+            {requests
+              .filter(req => req.type === 'purchase' && req.status !== 'pending')
+              .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+              .map(req => (
+                <Card key={req.id}>
+                  <CardHeader className="pb-2">
+                    <div className="flex justify-between items-center">
+                      <CardTitle className="text-lg">
+                        {req.item} {req.isCustom && <Badge variant="outline">Custom</Badge>}
+                      </CardTitle>
+                      <Badge
+                        variant={
+                          req.status === 'accepted' ? 'default' :
+                          req.status === 'rejected' ? 'destructive' : 'outline'
+                        }
+                      >
+                        {req.status}
+                      </Badge>
+                    </div>
+                    <CardDescription>
+                      From: {req.farmerName} | Requested: {req.createdAt.toLocaleDateString()}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm">Quantity: {req.quantity}</p>
+                    <p className="text-sm mt-2">{req.description}</p>
+                    
+                    {req.response && (
+                      <div className="mt-4 p-3 bg-muted rounded-md">
+                        <p className="text-sm font-medium">Your Response:</p>
+                        <p className="text-sm">{req.response}</p>
+                      </div>
+                    )}
+                    
+                    <div className="mt-4 border rounded-md">
+                      <div className="bg-muted p-2 rounded-t-md border-b">
+                        <h4 className="text-sm font-medium flex items-center">
+                          <MessageCircle className="h-4 w-4 mr-1" />
+                          Chat with Farmer
+                        </h4>
+                      </div>
+                      
+                      <div className="p-3 max-h-40 overflow-y-auto space-y-2">
+                        {getChatForRequest(req.id).length > 0 ? (
+                          getChatForRequest(req.id).map((msg, i) => (
+                            <div 
+                              key={i} 
+                              className={`p-2 rounded-lg max-w-[85%] ${
+                                msg.sender === role 
+                                  ? 'ml-auto bg-primary/10 text-primary-foreground' 
+                                  : 'bg-muted'
+                              }`}
+                            >
+                              <p className="text-xs font-medium">{msg.sender === role ? 'You' : 'Farmer'}</p>
+                              <p className="text-sm">{msg.text}</p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {msg.timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                              </p>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="text-xs text-center text-muted-foreground py-2">No messages yet</p>
+                        )}
+                      </div>
+                      
+                      <div className="p-2 border-t flex gap-2">
+                        <Textarea 
+                          id={`chat-${req.id}`}
+                          placeholder="Type a message..."
+                          className="min-h-[60px] text-sm"
+                        />
+                        <Button 
+                          size="sm" 
+                          className="self-end"
+                          onClick={() => {
+                            const textarea = document.getElementById(`chat-${req.id}`) as HTMLTextAreaElement;
+                            handleSendChatMessage(req.id, textarea.value);
+                          }}
+                        >
+                          Send
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            
+            {requests.filter(req => req.type === 'purchase' && req.status !== 'pending').length === 0 && (
+              <p className="text-center text-muted-foreground py-6">No responded requests yet.</p>
+            )}
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="products" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Add New Product</CardTitle>
+              <CardDescription>List your agricultural supplies for farmers to purchase</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Product Name</label>
+                <Input
+                  placeholder="Enter product name"
+                  value={newProduct.name}
+                  onChange={(e) => setNewProduct({...newProduct, name: e.target.value})}
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Quantity</label>
+                  <Input
+                    type="number"
+                    min="1"
+                    value={newProduct.quantity}
+                    onChange={(e) => setNewProduct({...newProduct, quantity: parseInt(e.target.value) || 1})}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Price ($)</label>
+                  <Input
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    value={newProduct.price}
+                    onChange={(e) => setNewProduct({...newProduct, price: parseFloat(e.target.value) || 0})}
+                  />
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Description</label>
+                <Textarea
+                  placeholder="Describe your product, quality, etc."
+                  value={newProduct.description}
+                  onChange={(e) => setNewProduct({...newProduct, description: e.target.value})}
+                />
+              </div>
+              
+              <Button onClick={handleAddSellerProduct} className="w-full mt-2">
+                <ShoppingBag className="h-4 w-4 mr-2" />
+                Add Product
+              </Button>
+            </CardContent>
+          </Card>
+          
+          <h3 className="text-lg font-medium mt-6">Your Product Listings</h3>
+          <div className="space-y-4">
+            {sellerProducts
+              .filter(product => product.sellerId === (user?.id || 'sup1'))
+              .map(product => (
+                <Card key={product.id}>
+                  <CardHeader className="pb-2">
+                    <div className="flex justify-between items-center">
+                      <CardTitle className="text-lg">{product.name}</CardTitle>
+                      <Badge>
+                        ${product.price.toFixed(2)}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm">Quantity: {product.quantity}</p>
+                    <p className="text-sm mt-2">{product.description}</p>
+                  </CardContent>
+                </Card>
+              ))}
+            
+            {sellerProducts.filter(product => product.sellerId === (user?.id || 'sup1')).length === 0 && (
+              <p className="text-center text-muted-foreground py-6">No products listed yet. Add your first product above.</p>
+            )}
+          </div>
+        </TabsContent>
+      </Tabs>
+    );
+  };
+  
+  const SpecialistPanel = () => {
+    const [responseText, setResponseText] = useState('');
+    const [selectedRequestId, setSelectedRequestId] = useState('');
+    
+    return (
+      <div className="space-y-8">
+        <h3 className="text-xl font-medium">Farmer Advice Requests</h3>
+        
+        <div className="space-y-4">
+          <h4 className="text-lg font-medium">Pending Requests</h4>
+          {requests
+            .filter(req => req.type === 'advice' && req.status === 'pending' && req.targetId === (user?.id || 'spec1'))
+            .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+            .map(req => (
+              <Card key={req.id}>
+                <CardHeader className="pb-2">
+                  <div className="flex justify-between items-center">
+                    <CardTitle className="text-lg">Advice Request</CardTitle>
+                    <Badge variant="outline">Pending</Badge>
+                  </div>
+                  <CardDescription>
+                    From: {req.farmerName} | Requested: {req.createdAt.toLocaleDateString()}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <p className="text-sm">{req.description}</p>
+                  
+                  <div className="bg-muted p-3 rounded-md">
+                    <p className="text-sm font-medium mb-2">Farmer Contact:</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="flex items-center">
+                        <Phone className="h-4 w-4 mr-2 text-muted-foreground" />
+                        <p className="text-sm">{req.contactPhone}</p>
+                      </div>
+                      <div className="flex items-center">
+                        <Mail className="h-4 w-4 mr-2 text-muted-foreground" />
+                        <p className="text-sm">{req.contactEmail}</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <Textarea
+                    placeholder="Write your advice here..."
+                    value={selectedRequestId === req.id ? responseText : ''}
+                    onChange={(e) => {
+                      setSelectedRequestId(req.id);
+                      setResponseText(e.target.value);
+                    }}
+                  />
+                  
+                  <div className="flex space-x-2">
+                    <Button 
+                      variant="default" 
+                      className="flex-1"
+                      onClick={() => {
+                        handleRespondToRequest(req.id, responseText || 'I can provide advice on this issue. Please feel free to ask any follow-up questions.', 'accepted');
+                        setResponseText('');
+                        setSelectedRequestId('');
+                      }}
+                    >
+                      Submit Advice
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          
+          {requests.filter(req => req.type === 'advice' && req.status === 'pending' && req.targetId === (user?.id || 'spec1')).length === 0 && (
+            <p className="text-center text-muted-foreground py-6">No pending advice requests.</p>
+          )}
+        </div>
+        
+        <div className="space-y-4">
+          <h4 className="text-lg font-medium">Responded Requests</h4>
+          {requests
+            .filter(req => req.type === 'advice' && req.status !== 'pending' && req.targetId === (user?.id || 'spec1'))
+            .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+            .map(req => (
+              <Card key={req.id}>
+                <CardHeader className="pb-2">
+                  <div className="flex justify-between items-center">
+                    <CardTitle className="text-lg">Advice Request</CardTitle>
+                    <Badge
+                      variant={
+                        req.status === 'accepted' ? 'default' :
+                        req.status === 'rejected' ? 'destructive' : 'outline'
+                      }
+                    >
+                      {req.status}
+                    </Badge>
+                  </div>
+                  <CardDescription>
+                    From: {req.farmerName} | Requested: {req.createdAt.toLocaleDateString()}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm">{req.description}</p>
+                  
+                  {req.response && (
+                    <div className="mt-4 p-3 bg-muted rounded-md">
+                      <p className="text-sm font-medium">Your Advice:</p>
+                      <p className="text-sm">{req.response}</p>
+                    </div>
+                  )}
+                  
+                  <div className="mt-4 border rounded-md">
+                    <div className="bg-muted p-2 rounded-t-md border-b">
+                      <h4 className="text-sm font-medium flex items-center">
+                        <MessageCircle className="h-4 w-4 mr-1" />
+                        Chat with Farmer
+                      </h4>
+                    </div>
+                    
+                    <div className="p-3 max-h-40 overflow-y-auto space-y-2">
+                      {getChatForRequest(req.id).length > 0 ? (
+                        getChatForRequest(req.id).map((msg, i) => (
+                          <div 
+                            key={i} 
+                            className={`p-2 rounded-lg max-w-[85%] ${
+                              msg.sender === role 
+                                ? 'ml-auto bg-primary/10 text-primary-foreground' 
+                                : 'bg-muted'
+                            }`}
+                          >
+                            <p className="text-xs font-medium">{msg.sender === role ? 'You' : 'Farmer'}</p>
+                            <p className="text-sm">{msg.text}</p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {msg.timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                            </p>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-xs text-center text-muted-foreground py-2">No messages yet</p>
+                      )}
+                    </div>
+                    
+                    <div className="p-2 border-t flex gap-2">
+                      <Textarea 
+                        id={`chat-${req.id}`}
+                        placeholder="Type a message..."
+                        className="min-h-[60px] text-sm"
+                      />
+                      <Button 
+                        size="sm" 
+                        className="self-end"
+                        onClick={() => {
+                          const textarea = document.getElementById(`chat-${req.id}`) as HTMLTextAreaElement;
+                          handleSendChatMessage(req.id, textarea.value);
+                        }}
+                      >
+                        Send
+                      </Button>
+                    </div>
+                  </CardContent>
+                </CardContent>
+              </Card>
+            ))}
+          
+          {requests.filter(req => req.type === 'advice' && req.status !== 'pending' && req.targetId === (user?.id || 'spec1')).length === 0 && (
+            <p className="text-center text-muted-foreground py-6">No responded advice requests yet.</p>
+          )}
+        </div>
+      </div>
+    );
+  };
+  
+  return (
+    <div className="container mx-auto py-6">
+      {role === 'farmer' && <FarmerPanel />}
+      {role === 'supplier' && <SupplierPanel />}
+      {role === 'specialist' && <SpecialistPanel />}
+    </div>
+  );
+}
