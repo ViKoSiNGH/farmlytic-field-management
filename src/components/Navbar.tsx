@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -32,6 +31,11 @@ export function Navbar() {
     { name: 'Weather', href: '/weather', icon: <Cloud className="h-4 w-4 mr-2" /> },
     { name: 'Analytics', href: '/analytics', icon: <BarChart className="h-4 w-4 mr-2" /> },
   ];
+
+  // If user is a farmer, add the farmer page to the nav items
+  if (user && user.role === 'farmer') {
+    navItems.push({ name: 'Farmer Tools', href: '/farmer', icon: <User className="h-4 w-4 mr-2" /> });
+  }
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);

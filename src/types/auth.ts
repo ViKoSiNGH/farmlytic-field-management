@@ -1,4 +1,3 @@
-
 export type UserRole = 'farmer' | 'supplier' | 'specialist';
 
 export interface User {
@@ -13,13 +12,13 @@ export interface FarmerRequest {
   id: string;
   farmerId: string;
   farmerName: string;
-  type: 'advice' | 'purchase';
+  type: 'purchase' | 'advice';
   item?: string;
   quantity?: number;
   description: string;
   status: 'pending' | 'accepted' | 'rejected';
   createdAt: Date;
-  targetId?: string; // ID of the specialist or supplier
+  targetId?: string;
   response?: string;
   contactPhone?: string;
   contactEmail?: string;
@@ -52,12 +51,12 @@ export interface Crop {
 
 export interface InventoryItem {
   id: string;
-  type: 'seed' | 'fertilizer' | 'pesticide' | 'crop' | 'waste';
+  type: string;
   name: string;
   quantity: number;
   unit: string;
   price: number;
-  sellerId?: string;
+  sellerId: string;
   available: boolean;
 }
 

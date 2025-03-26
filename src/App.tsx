@@ -15,6 +15,7 @@ import Fields from "./pages/Fields";
 import Crops from "./pages/Crops";
 import Weather from "./pages/Weather";
 import Analytics from "./pages/Analytics";
+import Farmer from "./pages/Farmer";
 
 const queryClient = new QueryClient();
 
@@ -86,6 +87,11 @@ const App = () => (
               <Route path="/analytics" element={
                 <ProtectedRoute>
                   <Analytics />
+                </ProtectedRoute>
+              } />
+              <Route path="/farmer" element={
+                <ProtectedRoute allowedRoles={['farmer']}>
+                  <Farmer />
                 </ProtectedRoute>
               } />
               {/* Make sure the catch-all route is the last one */}
