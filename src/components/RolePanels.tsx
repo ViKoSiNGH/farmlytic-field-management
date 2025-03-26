@@ -888,4 +888,4 @@ export function RolePanels({ role }: RolePanelsProps) {
           <div className="space-y-4">
             {sellerProducts
               .filter(product => product.sellerId === (user?.id || 'farmer1'))
-              .map(product =>
+              .map(product => (
