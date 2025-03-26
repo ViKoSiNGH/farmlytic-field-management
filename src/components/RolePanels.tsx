@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -889,3 +890,34 @@ export function RolePanels({ role }: RolePanelsProps) {
             {sellerProducts
               .filter(product => product.sellerId === (user?.id || 'farmer1'))
               .map(product => (
+                <Card key={product.id}>
+                  <CardHeader className="pb-2">
+                    <div className="flex justify-between items-center">
+                      <CardTitle className="text-lg">{product.name}</CardTitle>
+                      <Badge variant="outline">
+                        ${product.price.toFixed(2)}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm">Quantity: {product.quantity}</p>
+                    <p className="text-sm mt-2">{product.description}</p>
+                  </CardContent>
+                </Card>
+              ))}
+            
+            {sellerProducts.filter(product => product.sellerId === (user?.id || 'farmer1')).length === 0 && (
+              <p className="text-center text-muted-foreground py-6">No products listed yet. Add your first product above.</p>
+            )}
+          </div>
+        </TabsContent>
+      </Tabs>
+    );
+  }
+
+  return (
+    <div className="w-full">
+      {role === 'farmer' && <FarmerPanel />}
+    </div>
+  );
+}
