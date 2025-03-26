@@ -88,7 +88,7 @@ const App = () => (
                   <Analytics />
                 </ProtectedRoute>
               } />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              {/* Make sure the catch-all route is the last one */}
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

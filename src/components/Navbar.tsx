@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { GardenIcon, SeedlingIcon } from '@/components/GardenIcon';
 import { Cloud, LayoutDashboard, Settings, BarChart, Menu, X, User, LogOut } from 'lucide-react';
@@ -22,7 +22,9 @@ export function Navbar() {
   const isMobile = useIsMobile();
   const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
+  // Define nav items with exact paths that match the router configuration
   const navItems = [
     { name: 'Dashboard', href: '/', icon: <LayoutDashboard className="h-4 w-4 mr-2" /> },
     { name: 'Fields', href: '/fields', icon: <GardenIcon className="h-4 w-4 mr-2" /> },
@@ -58,7 +60,10 @@ export function Navbar() {
                 <Link 
                   key={item.name}
                   to={item.href}
-                  className="nav-item flex items-center text-foreground/80 hover:text-foreground hover:bg-muted/50"
+                  className={cn(
+                    "nav-item flex items-center text-foreground/80 hover:text-foreground hover:bg-muted/50",
+                    location.pathname === item.href && "bg-muted text-foreground"
+                  )}
                 >
                   {item.icon}
                   {item.name}
