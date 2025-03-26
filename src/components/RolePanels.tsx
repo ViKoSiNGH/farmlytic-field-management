@@ -423,766 +423,469 @@ export function RolePanels({ role }: RolePanelsProps) {
     setNewProduct(prev => ({...prev, description: e.target.value}));
   }, []);
   
-  const FarmerPanel = () => (
-    <Tabs defaultValue="buy" className="w-full" value={activeTab} onValueChange={setActiveTab}>
-      <TabsList className="grid grid-cols-3 mb-4">
-        <TabsTrigger value="buy">
-          <ShoppingBag className="h-4 w-4 mr-2" />
-          Buy Supplies
-        </TabsTrigger>
-        <TabsTrigger value="advice">
-          <HelpCircle className="h-4 w-4 mr-2" />
-          Get Advice
-        </TabsTrigger>
-        <TabsTrigger value="sell">
-          <DollarSign className="h-4 w-4 mr-2" />
-          Sell Products
-        </TabsTrigger>
-      </TabsList>
-      
-      <TabsContent value="buy" className="space-y-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>Purchase Request</CardTitle>
-            <CardDescription>Request supplies from our trusted suppliers</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Item Type</label>
-              <Select
-                value={newRequest.type}
-                onValueChange={(value: 'purchase' | 'custom') => 
-                  setNewRequest({...newRequest, type: value})
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select an item type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="purchase">Choose from Inventory</SelectItem>
-                  <SelectItem value="custom">Custom Item Request</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            {newRequest.type === 'purchase' ? (
+  function FarmerPanel() {
+    return (
+      <Tabs defaultValue="buy" className="w-full" value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid grid-cols-3 mb-4">
+          <TabsTrigger value="buy">
+            <ShoppingBag className="h-4 w-4 mr-2" />
+            Buy Supplies
+          </TabsTrigger>
+          <TabsTrigger value="advice">
+            <HelpCircle className="h-4 w-4 mr-2" />
+            Get Advice
+          </TabsTrigger>
+          <TabsTrigger value="sell">
+            <DollarSign className="h-4 w-4 mr-2" />
+            Sell Products
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="buy" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Purchase Request</CardTitle>
+              <CardDescription>Request supplies from our trusted suppliers</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Select Item</label>
+                <label className="text-sm font-medium">Item Type</label>
                 <Select
-                  value={newRequest.item}
-                  onValueChange={(value) => setNewRequest({...newRequest, item: value})}
+                  value={newRequest.type}
+                  onValueChange={(value: 'purchase' | 'custom') => 
+                    setNewRequest({...newRequest, type: value})
+                  }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select an item" />
+                    <SelectValue placeholder="Select an item type" />
                   </SelectTrigger>
                   <SelectContent>
-                    {inventory.map(item => (
-                      <SelectItem key={item.id} value={item.name}>
-                        {item.name} - ${item.price} per {item.unit}
-                      </SelectItem>
-                    ))}
+                    <SelectItem value="purchase">Choose from Inventory</SelectItem>
+                    <SelectItem value="custom">Custom Item Request</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-            ) : (
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Custom Item Name</label>
-                <Input
-                  placeholder="Enter item name you need"
-                  value={newRequest.customItem}
-                  onChange={handleChangeCustomItem}
-                />
-              </div>
-            )}
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Quantity</label>
-              <Input
-                type="number"
-                min="1"
-                value={newRequest.quantity}
-                onChange={handleChangeQuantity}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Additional Details</label>
-              <Textarea
-                placeholder="Describe your requirements, delivery preferences, etc."
-                value={newRequest.description}
-                onChange={handleChangeDescription}
-              />
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Contact Phone</label>
-                <Input
-                  placeholder="Your phone number"
-                  value={newRequest.contactPhone}
-                  onChange={handleChangeContactPhone}
-                />
-              </div>
               
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Contact Email</label>
-                <Input
-                  type="email"
-                  placeholder="Your email address"
-                  value={newRequest.contactEmail}
-                  onChange={handleChangeContactEmail}
-                />
-              </div>
-            </div>
-          </CardContent>
-          <CardFooter>
-            <Button onClick={handleSubmitRequest} className="w-full">
-              <Send className="h-4 w-4 mr-2" />
-              Submit Request
-            </Button>
-          </CardFooter>
-        </Card>
-        
-        <h3 className="text-lg font-medium mt-6">Your Purchase Requests</h3>
-        <div className="space-y-4">
-          {requests
-            .filter(req => req.type === 'purchase' && req.farmerId === (user?.id || 'farmer1'))
-            .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-            .map(req => (
-              <Card key={req.id}>
-                <CardHeader className="pb-2">
-                  <div className="flex justify-between items-center">
-                    <CardTitle className="text-lg">{req.item} {req.isCustom && <Badge variant="outline">Custom</Badge>}</CardTitle>
-                    <Badge
-                      variant={
-                        req.status === 'accepted' ? 'default' :
-                        req.status === 'rejected' ? 'destructive' : 'outline'
-                      }
-                    >
-                      {req.status}
-                    </Badge>
-                  </div>
-                  <CardDescription>
-                    Requested: {req.createdAt.toLocaleDateString()}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm">Quantity: {req.quantity}</p>
-                  <p className="text-sm mt-2">{req.description}</p>
-                  
-                  {req.response && (
-                    <div className="mt-4 p-3 bg-muted rounded-md">
-                      <p className="text-sm font-medium">Supplier Response:</p>
-                      <p className="text-sm">{req.response}</p>
-                    </div>
-                  )}
-                  
-                  {req.status === 'accepted' && (
-                    <div className="mt-4 p-3 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-md">
-                      <p className="text-sm font-semibold text-green-700 dark:text-green-300">Supplier Contact Information:</p>
-                      <div className="mt-2 space-y-1">
-                        <div className="flex items-center">
-                          <Phone className="h-4 w-4 mr-2 text-muted-foreground" />
-                          <p className="text-sm">555-987-6543</p>
-                        </div>
-                        <div className="flex items-center">
-                          <Mail className="h-4 w-4 mr-2 text-muted-foreground" />
-                          <p className="text-sm">supplier@example.com</p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {req.status !== 'pending' && (
-                    <div className="mt-4 border rounded-md">
-                      <div className="bg-muted p-2 rounded-t-md border-b">
-                        <h4 className="text-sm font-medium flex items-center">
-                          <MessageCircle className="h-4 w-4 mr-1" />
-                          Messages
-                        </h4>
-                      </div>
-                      
-                      <div className="p-3 max-h-40 overflow-y-auto space-y-2">
-                        {getChatForRequest(req.id).length > 0 ? (
-                          getChatForRequest(req.id).map((msg, i) => (
-                            <div 
-                              key={i} 
-                              className={`p-2 rounded-lg max-w-[85%] ${
-                                msg.sender === role 
-                                  ? 'ml-auto bg-primary/10 text-primary-foreground' 
-                                  : 'bg-muted'
-                              }`}
-                            >
-                              <p className="text-xs font-medium">{msg.sender === role ? 'You' : 'Supplier'}</p>
-                              <p className="text-sm">{msg.text}</p>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                {msg.timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                              </p>
-                            </div>
-                          ))
-                        ) : (
-                          <p className="text-xs text-center text-muted-foreground py-2">No messages yet</p>
-                        )}
-                      </div>
-                      
-                      <div className="p-2 border-t flex gap-2">
-                        <Textarea 
-                          id={`chat-${req.id}`}
-                          placeholder="Type a message..."
-                          className="min-h-[60px] text-sm"
-                        />
-                        <Button 
-                          size="sm" 
-                          className="self-end"
-                          onClick={() => {
-                            const textarea = document.getElementById(`chat-${req.id}`) as HTMLTextAreaElement;
-                            handleSendChatMessage(req.id, textarea.value);
-                          }}
-                        >
-                          Send
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-          
-          {requests.filter(req => req.type === 'purchase' && req.farmerId === (user?.id || 'farmer1')).length === 0 && (
-            <p className="text-center text-muted-foreground py-6">No purchase requests yet. Submit your first request above.</p>
-          )}
-        </div>
-      </TabsContent>
-      
-      <TabsContent value="advice" className="space-y-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>Request Advice</CardTitle>
-            <CardDescription>Get expert advice from agricultural specialists</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Select Specialist</label>
-              <Select
-                value={newRequest.targetId}
-                onValueChange={(value) => setNewRequest({...newRequest, type: 'advice', targetId: value})}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a specialist" />
-                </SelectTrigger>
-                <SelectContent>
-                  {specialists.map(specialist => (
-                    <SelectItem key={specialist.id} value={specialist.id}>
-                      {specialist.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Describe Your Issue</label>
-              <Textarea
-                placeholder="Explain the problem you're facing or the advice you need..."
-                value={newRequest.description}
-                onChange={handleChangeDescription}
-              />
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Contact Phone</label>
-                <Input
-                  placeholder="Your phone number"
-                  value={newRequest.contactPhone}
-                  onChange={handleChangeContactPhone}
-                />
-              </div>
+              {newRequest.type === 'purchase' ? (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Select Item</label>
+                  <Select
+                    value={newRequest.item}
+                    onValueChange={(value) => setNewRequest({...newRequest, item: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select an item" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {inventory.map(item => (
+                        <SelectItem key={item.id} value={item.name}>
+                          {item.name} - ${item.price} per {item.unit}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Custom Item Name</label>
+                  <Input
+                    placeholder="Enter item name you need"
+                    value={newRequest.customItem}
+                    onChange={handleChangeCustomItem}
+                  />
+                </div>
+              )}
               
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Contact Email</label>
-                <Input
-                  type="email"
-                  placeholder="Your email address"
-                  value={newRequest.contactEmail}
-                  onChange={handleChangeContactEmail}
-                />
-              </div>
-            </div>
-          </CardContent>
-          <CardFooter>
-            <Button onClick={handleSubmitRequest} className="w-full">
-              <Send className="h-4 w-4 mr-2" />
-              Request Advice
-            </Button>
-          </CardFooter>
-        </Card>
-        
-        <h3 className="text-lg font-medium mt-6">Your Advice Requests</h3>
-        <div className="space-y-4">
-          {requests
-            .filter(req => req.type === 'advice' && req.farmerId === (user?.id || 'farmer1'))
-            .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-            .map(req => (
-              <Card key={req.id}>
-                <CardHeader className="pb-2">
-                  <div className="flex justify-between items-center">
-                    <CardTitle className="text-lg">Advice Request</CardTitle>
-                    <Badge
-                      variant={
-                        req.status === 'accepted' ? 'default' :
-                        req.status === 'rejected' ? 'destructive' : 'outline'
-                      }
-                    >
-                      {req.status}
-                    </Badge>
-                  </div>
-                  <CardDescription>
-                    Requested: {req.createdAt.toLocaleDateString()}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm">{req.description}</p>
-                  
-                  {req.response && (
-                    <div className="mt-4 p-3 bg-muted rounded-md">
-                      <p className="text-sm font-medium">Specialist Response:</p>
-                      <p className="text-sm">{req.response}</p>
-                    </div>
-                  )}
-                  
-                  {req.status === 'accepted' && (
-                    <div className="mt-4 p-3 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-md">
-                      <p className="text-sm font-semibold text-green-700 dark:text-green-300">Specialist Contact Information:</p>
-                      <div className="mt-2 space-y-1">
-                        <div className="flex items-center">
-                          <Phone className="h-4 w-4 mr-2 text-muted-foreground" />
-                          <p className="text-sm">555-789-0123</p>
-                        </div>
-                        <div className="flex items-center">
-                          <Mail className="h-4 w-4 mr-2 text-muted-foreground" />
-                          <p className="text-sm">specialist@example.com</p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {req.status !== 'pending' && (
-                    <div className="mt-4 border rounded-md">
-                      <div className="bg-muted p-2 rounded-t-md border-b">
-                        <h4 className="text-sm font-medium flex items-center">
-                          <MessageCircle className="h-4 w-4 mr-1" />
-                          Chat with Specialist
-                        </h4>
-                      </div>
-                      
-                      <div className="p-3 max-h-40 overflow-y-auto space-y-2">
-                        {getChatForRequest(req.id).length > 0 ? (
-                          getChatForRequest(req.id).map((msg, i) => (
-                            <div 
-                              key={i} 
-                              className={`p-2 rounded-lg max-w-[85%] ${
-                                msg.sender === role 
-                                  ? 'ml-auto bg-primary/10 text-primary-foreground' 
-                                  : 'bg-muted'
-                              }`}
-                            >
-                              <p className="text-xs font-medium">{msg.sender === role ? 'You' : 'Specialist'}</p>
-                              <p className="text-sm">{msg.text}</p>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                {msg.timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                              </p>
-                            </div>
-                          ))
-                        ) : (
-                          <p className="text-xs text-center text-muted-foreground py-2">No messages yet</p>
-                        )}
-                      </div>
-                      
-                      <div className="p-2 border-t flex gap-2">
-                        <Textarea 
-                          id={`chat-${req.id}`}
-                          placeholder="Type a message..."
-                          className="min-h-[60px] text-sm"
-                        />
-                        <Button 
-                          size="sm" 
-                          className="self-end"
-                          onClick={() => {
-                            const textarea = document.getElementById(`chat-${req.id}`) as HTMLTextAreaElement;
-                            handleSendChatMessage(req.id, textarea.value);
-                          }}
-                        >
-                          Send
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-          
-          {requests.filter(req => req.type === 'advice' && req.farmerId === (user?.id || 'farmer1')).length === 0 && (
-            <p className="text-center text-muted-foreground py-6">No advice requests yet. Submit your first request above.</p>
-          )}
-        </div>
-      </TabsContent>
-      
-      <TabsContent value="sell" className="space-y-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>Sell Your Products</CardTitle>
-            <CardDescription>List your crops and agricultural products for sale</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Product Name</label>
-              <Input
-                placeholder="Enter product name"
-                value={newProduct.name}
-                onChange={handleChangeProductName}
-              />
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Quantity</label>
                 <Input
                   type="number"
                   min="1"
-                  value={newProduct.quantity}
-                  onChange={handleChangeProductQuantity}
+                  value={newRequest.quantity}
+                  onChange={handleChangeQuantity}
                 />
               </div>
               
               <div className="space-y-2">
-                <label className="text-sm font-medium">Price ($)</label>
-                <Input
-                  type="number"
-                  min="0.01"
-                  step="0.01"
-                  value={newProduct.price}
-                  onChange={handleChangeProductPrice}
+                <label className="text-sm font-medium">Additional Details</label>
+                <Textarea
+                  placeholder="Describe your requirements, delivery preferences, etc."
+                  value={newRequest.description}
+                  onChange={handleChangeDescription}
                 />
               </div>
-            </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Contact Phone</label>
+                  <Input
+                    placeholder="Your phone number"
+                    value={newRequest.contactPhone}
+                    onChange={handleChangeContactPhone}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Contact Email</label>
+                  <Input
+                    type="email"
+                    placeholder="Your email address"
+                    value={newRequest.contactEmail}
+                    onChange={handleChangeContactEmail}
+                  />
+                </div>
+              </div>
+            </CardContent>
+            <CardFooter>
+              <Button onClick={handleSubmitRequest} className="w-full">
+                <Send className="h-4 w-4 mr-2" />
+                Submit Request
+              </Button>
+            </CardFooter>
+          </Card>
+          
+          <h3 className="text-lg font-medium mt-6">Your Purchase Requests</h3>
+          <div className="space-y-4">
+            {requests
+              .filter(req => req.type === 'purchase' && req.farmerId === (user?.id || 'farmer1'))
+              .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+              .map(req => (
+                <Card key={req.id}>
+                  <CardHeader className="pb-2">
+                    <div className="flex justify-between items-center">
+                      <CardTitle className="text-lg">{req.item} {req.isCustom && <Badge variant="outline">Custom</Badge>}</CardTitle>
+                      <Badge
+                        variant={
+                          req.status === 'accepted' ? 'default' :
+                          req.status === 'rejected' ? 'destructive' : 'outline'
+                        }
+                      >
+                        {req.status}
+                      </Badge>
+                    </div>
+                    <CardDescription>
+                      Requested: {req.createdAt.toLocaleDateString()}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm">Quantity: {req.quantity}</p>
+                    <p className="text-sm mt-2">{req.description}</p>
+                    
+                    {req.response && (
+                      <div className="mt-4 p-3 bg-muted rounded-md">
+                        <p className="text-sm font-medium">Supplier Response:</p>
+                        <p className="text-sm">{req.response}</p>
+                      </div>
+                    )}
+                    
+                    {req.status === 'accepted' && (
+                      <div className="mt-4 p-3 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-md">
+                        <p className="text-sm font-semibold text-green-700 dark:text-green-300">Supplier Contact Information:</p>
+                        <div className="mt-2 space-y-1">
+                          <div className="flex items-center">
+                            <Phone className="h-4 w-4 mr-2 text-muted-foreground" />
+                            <p className="text-sm">555-987-6543</p>
+                          </div>
+                          <div className="flex items-center">
+                            <Mail className="h-4 w-4 mr-2 text-muted-foreground" />
+                            <p className="text-sm">supplier@example.com</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {req.status !== 'pending' && (
+                      <div className="mt-4 border rounded-md">
+                        <div className="bg-muted p-2 rounded-t-md border-b">
+                          <h4 className="text-sm font-medium flex items-center">
+                            <MessageCircle className="h-4 w-4 mr-1" />
+                            Messages
+                          </h4>
+                        </div>
+                        
+                        <div className="p-3 max-h-40 overflow-y-auto space-y-2">
+                          {getChatForRequest(req.id).length > 0 ? (
+                            getChatForRequest(req.id).map((msg, i) => (
+                              <div 
+                                key={i} 
+                                className={`p-2 rounded-lg max-w-[85%] ${
+                                  msg.sender === role 
+                                    ? 'ml-auto bg-primary/10 text-primary-foreground' 
+                                    : 'bg-muted'
+                                }`}
+                              >
+                                <p className="text-xs font-medium">{msg.sender === role ? 'You' : 'Supplier'}</p>
+                                <p className="text-sm">{msg.text}</p>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  {msg.timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                </p>
+                              </div>
+                            ))
+                          ) : (
+                            <p className="text-xs text-center text-muted-foreground py-2">No messages yet</p>
+                          )}
+                        </div>
+                        
+                        <div className="p-2 border-t flex gap-2">
+                          <Textarea 
+                            id={`chat-${req.id}`}
+                            placeholder="Type a message..."
+                            className="min-h-[60px] text-sm"
+                          />
+                          <Button 
+                            size="sm" 
+                            className="self-end"
+                            onClick={() => {
+                              const textarea = document.getElementById(`chat-${req.id}`) as HTMLTextAreaElement;
+                              handleSendChatMessage(req.id, textarea.value);
+                            }}
+                          >
+                            Send
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
             
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Description</label>
-              <Textarea
-                placeholder="Describe your product, quality, etc."
-                value={newProduct.description}
-                onChange={handleChangeProductDescription}
-              />
-            </div>
-            
-            <Button onClick={handleAddSellerProduct} className="w-full mt-2">
-              <ShoppingBag className="h-4 w-4 mr-2" />
-              List Product
-            </Button>
-          </CardContent>
-        </Card>
+            {requests.filter(req => req.type === 'purchase' && req.farmerId === (user?.id || 'farmer1')).length === 0 && (
+              <p className="text-center text-muted-foreground py-6">No purchase requests yet. Submit your first request above.</p>
+            )}
+          </div>
+        </TabsContent>
         
-        <h3 className="text-lg font-medium mt-6">Your Listed Products</h3>
-        <div className="space-y-4">
-          {sellerProducts
-            .filter(product => product.sellerId === (user?.id || 'farmer1'))
-            .map(product => (
-              <Card key={product.id}>
-                <CardHeader className="pb-2">
-                  <div className="flex justify-between items-center">
-                    <CardTitle className="text-lg">{product.name}</CardTitle>
-                    <Badge variant="outline">${product.price.toFixed(2)}</Badge>
-                  </div>
-                  <CardDescription>
-                    Quantity: {product.quantity}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm">{product.description}</p>
-                </CardContent>
-              </Card>
-            ))}
-          
-          {sellerProducts.filter(product => product.sellerId === (user?.id || 'farmer1')).length === 0 && (
-            <p className="text-center text-muted-foreground py-6">No products listed yet. Add your first product above.</p>
-          )}
-        </div>
-      </TabsContent>
-    </Tabs>
-  );
-  
-  const SupplierPanel = () => (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Farmer Requests</CardTitle>
-          <CardDescription>Review and respond to purchase requests from farmers</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {requests
-            .filter(req => req.type === 'purchase' && req.targetId === (user?.id || 'sup1'))
-            .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-            .map(req => (
-              <div key={req.id} className="border rounded-lg p-4">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h4 className="font-medium">{req.item} {req.isCustom && <Badge variant="outline">Custom</Badge>}</h4>
-                    <p className="text-sm text-muted-foreground">From: {req.farmerName}</p>
-                    <p className="text-sm text-muted-foreground">Requested: {req.createdAt.toLocaleDateString()}</p>
-                  </div>
-                  <Badge
-                    variant={
-                      req.status === 'accepted' ? 'default' :
-                      req.status === 'rejected' ? 'destructive' : 'outline'
-                    }
-                  >
-                    {req.status}
-                  </Badge>
-                </div>
-                
-                <div className="mt-2">
-                  <p className="text-sm"><span className="font-medium">Quantity:</span> {req.quantity}</p>
-                  <p className="text-sm mt-1"><span className="font-medium">Details:</span> {req.description}</p>
-                </div>
-                
-                {req.status === 'pending' ? (
-                  <div className="mt-4 space-y-2">
-                    <Textarea 
-                      id={`response-${req.id}`}
-                      placeholder="Write your response..."
-                      className="text-sm"
-                    />
-                    <div className="flex space-x-2">
-                      <Button 
-                        variant="default"
-                        className="flex-1"
-                        onClick={() => {
-                          const textarea = document.getElementById(`response-${req.id}`) as HTMLTextAreaElement;
-                          handleRespondToRequest(req.id, textarea.value, 'accepted');
-                        }}
-                      >
-                        Accept Request
-                      </Button>
-                      <Button 
-                        variant="destructive"
-                        className="flex-1"
-                        onClick={() => {
-                          const textarea = document.getElementById(`response-${req.id}`) as HTMLTextAreaElement;
-                          handleRespondToRequest(req.id, textarea.value, 'rejected');
-                        }}
-                      >
-                        Decline Request
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <div className="mt-4 p-3 bg-muted rounded-md">
-                      <p className="text-sm font-medium">Your Response:</p>
-                      <p className="text-sm">{req.response}</p>
-                    </div>
-                    
-                    <div className="mt-4 border rounded-md">
-                      <div className="bg-muted p-2 rounded-t-md border-b">
-                        <h4 className="text-sm font-medium flex items-center">
-                          <MessageCircle className="h-4 w-4 mr-1" />
-                          Chat with Farmer
-                        </h4>
-                      </div>
-                      
-                      <div className="p-3 max-h-40 overflow-y-auto space-y-2">
-                        {getChatForRequest(req.id).length > 0 ? (
-                          getChatForRequest(req.id).map((msg, i) => (
-                            <div 
-                              key={i} 
-                              className={`p-2 rounded-lg max-w-[85%] ${
-                                msg.sender === role 
-                                  ? 'ml-auto bg-primary/10 text-primary-foreground' 
-                                  : 'bg-muted'
-                              }`}
-                            >
-                              <p className="text-xs font-medium">{msg.sender === role ? 'You' : 'Farmer'}</p>
-                              <p className="text-sm">{msg.text}</p>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                {msg.timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                              </p>
-                            </div>
-                          ))
-                        ) : (
-                          <p className="text-xs text-center text-muted-foreground py-2">No messages yet</p>
-                        )}
-                      </div>
-                      
-                      <div className="p-2 border-t flex gap-2">
-                        <Textarea 
-                          id={`chat-${req.id}`}
-                          placeholder="Type a message..."
-                          className="min-h-[60px] text-sm"
-                        />
-                        <Button 
-                          size="sm" 
-                          className="self-end"
-                          onClick={() => {
-                            const textarea = document.getElementById(`chat-${req.id}`) as HTMLTextAreaElement;
-                            handleSendChatMessage(req.id, textarea.value);
-                          }}
-                        >
-                          Send
-                        </Button>
-                      </div>
-                    </div>
-                  </>
-                )}
+        <TabsContent value="advice" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Request Advice</CardTitle>
+              <CardDescription>Get expert advice from agricultural specialists</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Select Specialist</label>
+                <Select
+                  value={newRequest.targetId}
+                  onValueChange={(value) => setNewRequest({...newRequest, type: 'advice', targetId: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a specialist" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {specialists.map(specialist => (
+                      <SelectItem key={specialist.id} value={specialist.id}>
+                        {specialist.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-            ))}
-          
-          {requests.filter(req => req.type === 'purchase' && req.targetId === (user?.id || 'sup1')).length === 0 && (
-            <p className="text-center text-muted-foreground py-6">No purchase requests from farmers yet.</p>
-          )}
-        </CardContent>
-      </Card>
-    </div>
-  );
-  
-  const SpecialistPanel = () => (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Advice Requests</CardTitle>
-          <CardDescription>Review and respond to advice requests from farmers</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {requests
-            .filter(req => req.type === 'advice' && req.targetId === (user?.id || 'spec1'))
-            .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-            .map(req => (
-              <div key={req.id} className="border rounded-lg p-4">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h4 className="font-medium">Advice Request</h4>
-                    <p className="text-sm text-muted-foreground">From: {req.farmerName}</p>
-                    <p className="text-sm text-muted-foreground">Requested: {req.createdAt.toLocaleDateString()}</p>
-                  </div>
-                  <Badge
-                    variant={
-                      req.status === 'accepted' ? 'default' :
-                      req.status === 'rejected' ? 'destructive' : 'outline'
-                    }
-                  >
-                    {req.status}
-                  </Badge>
-                </div>
-                
-                <div className="mt-2">
-                  <p className="text-sm"><span className="font-medium">Issue:</span> {req.description}</p>
-                </div>
-                
-                {req.status === 'pending' ? (
-                  <div className="mt-4 space-y-2">
-                    <Textarea 
-                      id={`response-${req.id}`}
-                      placeholder="Write your advice..."
-                      className="text-sm"
-                    />
-                    <div className="flex space-x-2">
-                      <Button 
-                        variant="default"
-                        className="flex-1"
-                        onClick={() => {
-                          const textarea = document.getElementById(`response-${req.id}`) as HTMLTextAreaElement;
-                          handleRespondToRequest(req.id, textarea.value, 'accepted');
-                        }}
-                      >
-                        Provide Advice
-                      </Button>
-                      <Button 
-                        variant="destructive"
-                        className="flex-1"
-                        onClick={() => {
-                          const textarea = document.getElementById(`response-${req.id}`) as HTMLTextAreaElement;
-                          handleRespondToRequest(req.id, textarea.value, 'rejected');
-                        }}
-                      >
-                        Decline Request
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <div className="mt-4 p-3 bg-muted rounded-md">
-                      <p className="text-sm font-medium">Your Response:</p>
-                      <p className="text-sm">{req.response}</p>
-                    </div>
-                    
-                    <div className="mt-4 border rounded-md">
-                      <div className="bg-muted p-2 rounded-t-md border-b">
-                        <h4 className="text-sm font-medium flex items-center">
-                          <MessageCircle className="h-4 w-4 mr-1" />
-                          Chat with Farmer
-                        </h4>
-                      </div>
-                      
-                      <div className="p-3 max-h-40 overflow-y-auto space-y-2">
-                        {getChatForRequest(req.id).length > 0 ? (
-                          getChatForRequest(req.id).map((msg, i) => (
-                            <div 
-                              key={i} 
-                              className={`p-2 rounded-lg max-w-[85%] ${
-                                msg.sender === role 
-                                  ? 'ml-auto bg-primary/10 text-primary-foreground' 
-                                  : 'bg-muted'
-                              }`}
-                            >
-                              <p className="text-xs font-medium">{msg.sender === role ? 'You' : 'Farmer'}</p>
-                              <p className="text-sm">{msg.text}</p>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                {msg.timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                              </p>
-                            </div>
-                          ))
-                        ) : (
-                          <p className="text-xs text-center text-muted-foreground py-2">No messages yet</p>
-                        )}
-                      </div>
-                      
-                      <div className="p-2 border-t flex gap-2">
-                        <Textarea 
-                          id={`chat-${req.id}`}
-                          placeholder="Type a message..."
-                          className="min-h-[60px] text-sm"
-                        />
-                        <Button 
-                          size="sm" 
-                          className="self-end"
-                          onClick={() => {
-                            const textarea = document.getElementById(`chat-${req.id}`) as HTMLTextAreaElement;
-                            handleSendChatMessage(req.id, textarea.value);
-                          }}
-                        >
-                          Send
-                        </Button>
-                      </div>
-                    </div>
-                  </>
-                )}
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Describe Your Issue</label>
+                <Textarea
+                  placeholder="Explain the problem you're facing or the advice you need..."
+                  value={newRequest.description}
+                  onChange={handleChangeDescription}
+                />
               </div>
-            ))}
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Contact Phone</label>
+                  <Input
+                    placeholder="Your phone number"
+                    value={newRequest.contactPhone}
+                    onChange={handleChangeContactPhone}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Contact Email</label>
+                  <Input
+                    type="email"
+                    placeholder="Your email address"
+                    value={newRequest.contactEmail}
+                    onChange={handleChangeContactEmail}
+                  />
+                </div>
+              </div>
+            </CardContent>
+            <CardFooter>
+              <Button onClick={handleSubmitRequest} className="w-full">
+                <Send className="h-4 w-4 mr-2" />
+                Request Advice
+              </Button>
+            </CardFooter>
+          </Card>
           
-          {requests.filter(req => req.type === 'advice' && req.targetId === (user?.id || 'spec1')).length === 0 && (
-            <p className="text-center text-muted-foreground py-6">No advice requests from farmers yet.</p>
-          )}
-        </CardContent>
-      </Card>
-    </div>
-  );
-  
-  return (
-    <div className="w-full">
-      {role === 'farmer' && <FarmerPanel />}
-      {role === 'supplier' && <SupplierPanel />}
-      {role === 'specialist' && <SpecialistPanel />}
-    </div>
-  );
-}
-
+          <h3 className="text-lg font-medium mt-6">Your Advice Requests</h3>
+          <div className="space-y-4">
+            {requests
+              .filter(req => req.type === 'advice' && req.farmerId === (user?.id || 'farmer1'))
+              .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+              .map(req => (
+                <Card key={req.id}>
+                  <CardHeader className="pb-2">
+                    <div className="flex justify-between items-center">
+                      <CardTitle className="text-lg">Advice Request</CardTitle>
+                      <Badge
+                        variant={
+                          req.status === 'accepted' ? 'default' :
+                          req.status === 'rejected' ? 'destructive' : 'outline'
+                        }
+                      >
+                        {req.status}
+                      </Badge>
+                    </div>
+                    <CardDescription>
+                      Requested: {req.createdAt.toLocaleDateString()}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm">{req.description}</p>
+                    
+                    {req.response && (
+                      <div className="mt-4 p-3 bg-muted rounded-md">
+                        <p className="text-sm font-medium">Specialist Response:</p>
+                        <p className="text-sm">{req.response}</p>
+                      </div>
+                    )}
+                    
+                    {req.status === 'accepted' && (
+                      <div className="mt-4 p-3 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-md">
+                        <p className="text-sm font-semibold text-green-700 dark:text-green-300">Specialist Contact Information:</p>
+                        <div className="mt-2 space-y-1">
+                          <div className="flex items-center">
+                            <Phone className="h-4 w-4 mr-2 text-muted-foreground" />
+                            <p className="text-sm">555-789-0123</p>
+                          </div>
+                          <div className="flex items-center">
+                            <Mail className="h-4 w-4 mr-2 text-muted-foreground" />
+                            <p className="text-sm">specialist@example.com</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {req.status !== 'pending' && (
+                      <div className="mt-4 border rounded-md">
+                        <div className="bg-muted p-2 rounded-t-md border-b">
+                          <h4 className="text-sm font-medium flex items-center">
+                            <MessageCircle className="h-4 w-4 mr-1" />
+                            Chat with Specialist
+                          </h4>
+                        </div>
+                        
+                        <div className="p-3 max-h-40 overflow-y-auto space-y-2">
+                          {getChatForRequest(req.id).length > 0 ? (
+                            getChatForRequest(req.id).map((msg, i) => (
+                              <div 
+                                key={i} 
+                                className={`p-2 rounded-lg max-w-[85%] ${
+                                  msg.sender === role 
+                                    ? 'ml-auto bg-primary/10 text-primary-foreground' 
+                                    : 'bg-muted'
+                                }`}
+                              >
+                                <p className="text-xs font-medium">{msg.sender === role ? 'You' : 'Specialist'}</p>
+                                <p className="text-sm">{msg.text}</p>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  {msg.timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                </p>
+                              </div>
+                            ))
+                          ) : (
+                            <p className="text-xs text-center text-muted-foreground py-2">No messages yet</p>
+                          )}
+                        </div>
+                        
+                        <div className="p-2 border-t flex gap-2">
+                          <Textarea 
+                            id={`chat-${req.id}`}
+                            placeholder="Type a message..."
+                            className="min-h-[60px] text-sm"
+                          />
+                          <Button 
+                            size="sm" 
+                            className="self-end"
+                            onClick={() => {
+                              const textarea = document.getElementById(`chat-${req.id}`) as HTMLTextAreaElement;
+                              handleSendChatMessage(req.id, textarea.value);
+                            }}
+                          >
+                            Send
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            
+            {requests.filter(req => req.type === 'advice' && req.farmerId === (user?.id || 'farmer1')).length === 0 && (
+              <p className="text-center text-muted-foreground py-6">No advice requests yet. Submit your first request above.</p>
+            )}
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="sell" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Sell Your Products</CardTitle>
+              <CardDescription>List your crops and agricultural products for sale</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Product Name</label>
+                <Input
+                  placeholder="Enter product name"
+                  value={newProduct.name}
+                  onChange={handleChangeProductName}
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Quantity</label>
+                  <Input
+                    type="number"
+                    min="1"
+                    value={newProduct.quantity}
+                    onChange={handleChangeProductQuantity}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Price ($)</label>
+                  <Input
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    value={newProduct.price}
+                    onChange={handleChangeProductPrice}
+                  />
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Description</label>
+                <Textarea
+                  placeholder="Describe your product, quality, etc."
+                  value={newProduct.description}
+                  onChange={handleChangeProductDescription}
+                />
+              </div>
+              
+              <Button onClick={handleAddSellerProduct} className="w-full mt-2">
+                <ShoppingBag className="h-4 w-4 mr-2" />
+                List Product
+              </Button>
+            </CardContent>
+          </Card>
+          
+          <h3 className="text-lg font-medium mt-6">Your Listed Products</h3>
+          <div className="space-y-4">
+            {sellerProducts
+              .filter(product => product.sellerId === (user?.id || 'farmer1'))
+              .map(product =>

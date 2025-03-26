@@ -1,3 +1,4 @@
+
 export type UserRole = 'farmer' | 'supplier' | 'specialist';
 
 export interface User {
