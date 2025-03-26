@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { User, UserRole } from '@/types/auth';
@@ -159,20 +160,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(userWithoutPassword);
           localStorage.setItem('farmlytic_user', JSON.stringify(userWithoutPassword));
           
+          toast({
+            title: "Login Successful",
+            description: `Welcome back, ${foundUser.name}!`
+          });
+          
           return true;
         } else {
+          toast({
+            title: "Login Failed",
+            description: "Invalid email or password.",
+            variant: "destructive",
+          });
           return false;
         }
       }
 
       // Supabase login successful
       if (data.user) {
+        toast({
+          title: "Login Successful",
+          description: "Welcome back!"
+        });
         return true;
       }
 
       return false;
     } catch (error) {
       console.error('Login error:', error);
+      toast({
+        title: "Login Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      });
       return false;
     } finally {
       setIsLoading(false);

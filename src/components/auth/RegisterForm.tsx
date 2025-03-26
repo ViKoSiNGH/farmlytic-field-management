@@ -10,14 +10,21 @@ import { useAuth } from '@/hooks/use-auth';
 import { Loader2 } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { UserRole } from '@/types/auth';
+import * as z from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
 
-interface RegisterFormValues {
-  name: string;
-  email: string;
-  password: string;
-  confirmPassword: string;
-  role: UserRole;
-}
+const registerSchema = z.object({
+  name: z.string().min(2, 'Name must be at least 2 characters'),
+  email: z.string().email('Please enter a valid email address'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+  confirmPassword: z.string(),
+  role: z.enum(['farmer', 'supplier', 'specialist'] as const)
+}).refine(data => data.password === data.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"]
+});
+
+type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export function RegisterForm() {
   const { toast } = useToast();
@@ -26,6 +33,7 @@ export function RegisterForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const form = useForm<RegisterFormValues>({
+    resolver: zodResolver(registerSchema),
     defaultValues: {
       name: '',
       email: '',
@@ -35,20 +43,33 @@ export function RegisterForm() {
     },
   });
 
-  const onSubmit = async (data: RegisterFormValues) => {
-    if (data.password !== data.confirmPassword) {
-      form.setError('confirmPassword', {
-        message: 'Passwords do not match',
+  const onSubmit = async (data: RegisterFormValues) => {    
+    try {
+      setIsSubmitting(true);
+      const success = await register(data.name, data.email, data.password, data.role);
+      
+      if (success) {
+        toast({
+          title: "Registration Successful",
+          description: `Welcome to FarmLytic, ${data.name}!`,
+        });
+        navigate('/');
+      } else {
+        toast({
+          title: "Registration Failed",
+          description: "An account with this email might already exist.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      toast({
+        title: "Registration Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
       });
-      return;
-    }
-    
-    setIsSubmitting(true);
-    const success = await register(data.name, data.email, data.password, data.role);
-    setIsSubmitting(false);
-    
-    if (success) {
-      navigate('/');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
