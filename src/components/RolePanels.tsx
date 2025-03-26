@@ -889,3 +889,300 @@ export function RolePanels({ role }: RolePanelsProps) {
             .filter(product => product.sellerId === (user?.id || 'farmer1'))
             .map(product => (
               <Card key={product.id}>
+                <CardHeader className="pb-2">
+                  <div className="flex justify-between items-center">
+                    <CardTitle className="text-lg">{product.name}</CardTitle>
+                    <Badge variant="outline">${product.price.toFixed(2)}</Badge>
+                  </div>
+                  <CardDescription>
+                    Quantity: {product.quantity}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm">{product.description}</p>
+                </CardContent>
+              </Card>
+            ))}
+          
+          {sellerProducts.filter(product => product.sellerId === (user?.id || 'farmer1')).length === 0 && (
+            <p className="text-center text-muted-foreground py-6">No products listed yet. Add your first product above.</p>
+          )}
+        </div>
+      </TabsContent>
+    </Tabs>
+  );
+  
+  const SupplierPanel = () => (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Farmer Requests</CardTitle>
+          <CardDescription>Review and respond to purchase requests from farmers</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {requests
+            .filter(req => req.type === 'purchase' && req.targetId === (user?.id || 'sup1'))
+            .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+            .map(req => (
+              <div key={req.id} className="border rounded-lg p-4">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h4 className="font-medium">{req.item} {req.isCustom && <Badge variant="outline">Custom</Badge>}</h4>
+                    <p className="text-sm text-muted-foreground">From: {req.farmerName}</p>
+                    <p className="text-sm text-muted-foreground">Requested: {req.createdAt.toLocaleDateString()}</p>
+                  </div>
+                  <Badge
+                    variant={
+                      req.status === 'accepted' ? 'default' :
+                      req.status === 'rejected' ? 'destructive' : 'outline'
+                    }
+                  >
+                    {req.status}
+                  </Badge>
+                </div>
+                
+                <div className="mt-2">
+                  <p className="text-sm"><span className="font-medium">Quantity:</span> {req.quantity}</p>
+                  <p className="text-sm mt-1"><span className="font-medium">Details:</span> {req.description}</p>
+                </div>
+                
+                {req.status === 'pending' ? (
+                  <div className="mt-4 space-y-2">
+                    <Textarea 
+                      id={`response-${req.id}`}
+                      placeholder="Write your response..."
+                      className="text-sm"
+                    />
+                    <div className="flex space-x-2">
+                      <Button 
+                        variant="default"
+                        className="flex-1"
+                        onClick={() => {
+                          const textarea = document.getElementById(`response-${req.id}`) as HTMLTextAreaElement;
+                          handleRespondToRequest(req.id, textarea.value, 'accepted');
+                        }}
+                      >
+                        Accept Request
+                      </Button>
+                      <Button 
+                        variant="destructive"
+                        className="flex-1"
+                        onClick={() => {
+                          const textarea = document.getElementById(`response-${req.id}`) as HTMLTextAreaElement;
+                          handleRespondToRequest(req.id, textarea.value, 'rejected');
+                        }}
+                      >
+                        Decline Request
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="mt-4 p-3 bg-muted rounded-md">
+                      <p className="text-sm font-medium">Your Response:</p>
+                      <p className="text-sm">{req.response}</p>
+                    </div>
+                    
+                    <div className="mt-4 border rounded-md">
+                      <div className="bg-muted p-2 rounded-t-md border-b">
+                        <h4 className="text-sm font-medium flex items-center">
+                          <MessageCircle className="h-4 w-4 mr-1" />
+                          Chat with Farmer
+                        </h4>
+                      </div>
+                      
+                      <div className="p-3 max-h-40 overflow-y-auto space-y-2">
+                        {getChatForRequest(req.id).length > 0 ? (
+                          getChatForRequest(req.id).map((msg, i) => (
+                            <div 
+                              key={i} 
+                              className={`p-2 rounded-lg max-w-[85%] ${
+                                msg.sender === role 
+                                  ? 'ml-auto bg-primary/10 text-primary-foreground' 
+                                  : 'bg-muted'
+                              }`}
+                            >
+                              <p className="text-xs font-medium">{msg.sender === role ? 'You' : 'Farmer'}</p>
+                              <p className="text-sm">{msg.text}</p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {msg.timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                              </p>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="text-xs text-center text-muted-foreground py-2">No messages yet</p>
+                        )}
+                      </div>
+                      
+                      <div className="p-2 border-t flex gap-2">
+                        <Textarea 
+                          id={`chat-${req.id}`}
+                          placeholder="Type a message..."
+                          className="min-h-[60px] text-sm"
+                        />
+                        <Button 
+                          size="sm" 
+                          className="self-end"
+                          onClick={() => {
+                            const textarea = document.getElementById(`chat-${req.id}`) as HTMLTextAreaElement;
+                            handleSendChatMessage(req.id, textarea.value);
+                          }}
+                        >
+                          Send
+                        </Button>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            ))}
+          
+          {requests.filter(req => req.type === 'purchase' && req.targetId === (user?.id || 'sup1')).length === 0 && (
+            <p className="text-center text-muted-foreground py-6">No purchase requests from farmers yet.</p>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+  
+  const SpecialistPanel = () => (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Advice Requests</CardTitle>
+          <CardDescription>Review and respond to advice requests from farmers</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {requests
+            .filter(req => req.type === 'advice' && req.targetId === (user?.id || 'spec1'))
+            .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+            .map(req => (
+              <div key={req.id} className="border rounded-lg p-4">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h4 className="font-medium">Advice Request</h4>
+                    <p className="text-sm text-muted-foreground">From: {req.farmerName}</p>
+                    <p className="text-sm text-muted-foreground">Requested: {req.createdAt.toLocaleDateString()}</p>
+                  </div>
+                  <Badge
+                    variant={
+                      req.status === 'accepted' ? 'default' :
+                      req.status === 'rejected' ? 'destructive' : 'outline'
+                    }
+                  >
+                    {req.status}
+                  </Badge>
+                </div>
+                
+                <div className="mt-2">
+                  <p className="text-sm"><span className="font-medium">Issue:</span> {req.description}</p>
+                </div>
+                
+                {req.status === 'pending' ? (
+                  <div className="mt-4 space-y-2">
+                    <Textarea 
+                      id={`response-${req.id}`}
+                      placeholder="Write your advice..."
+                      className="text-sm"
+                    />
+                    <div className="flex space-x-2">
+                      <Button 
+                        variant="default"
+                        className="flex-1"
+                        onClick={() => {
+                          const textarea = document.getElementById(`response-${req.id}`) as HTMLTextAreaElement;
+                          handleRespondToRequest(req.id, textarea.value, 'accepted');
+                        }}
+                      >
+                        Provide Advice
+                      </Button>
+                      <Button 
+                        variant="destructive"
+                        className="flex-1"
+                        onClick={() => {
+                          const textarea = document.getElementById(`response-${req.id}`) as HTMLTextAreaElement;
+                          handleRespondToRequest(req.id, textarea.value, 'rejected');
+                        }}
+                      >
+                        Decline Request
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="mt-4 p-3 bg-muted rounded-md">
+                      <p className="text-sm font-medium">Your Response:</p>
+                      <p className="text-sm">{req.response}</p>
+                    </div>
+                    
+                    <div className="mt-4 border rounded-md">
+                      <div className="bg-muted p-2 rounded-t-md border-b">
+                        <h4 className="text-sm font-medium flex items-center">
+                          <MessageCircle className="h-4 w-4 mr-1" />
+                          Chat with Farmer
+                        </h4>
+                      </div>
+                      
+                      <div className="p-3 max-h-40 overflow-y-auto space-y-2">
+                        {getChatForRequest(req.id).length > 0 ? (
+                          getChatForRequest(req.id).map((msg, i) => (
+                            <div 
+                              key={i} 
+                              className={`p-2 rounded-lg max-w-[85%] ${
+                                msg.sender === role 
+                                  ? 'ml-auto bg-primary/10 text-primary-foreground' 
+                                  : 'bg-muted'
+                              }`}
+                            >
+                              <p className="text-xs font-medium">{msg.sender === role ? 'You' : 'Farmer'}</p>
+                              <p className="text-sm">{msg.text}</p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {msg.timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                              </p>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="text-xs text-center text-muted-foreground py-2">No messages yet</p>
+                        )}
+                      </div>
+                      
+                      <div className="p-2 border-t flex gap-2">
+                        <Textarea 
+                          id={`chat-${req.id}`}
+                          placeholder="Type a message..."
+                          className="min-h-[60px] text-sm"
+                        />
+                        <Button 
+                          size="sm" 
+                          className="self-end"
+                          onClick={() => {
+                            const textarea = document.getElementById(`chat-${req.id}`) as HTMLTextAreaElement;
+                            handleSendChatMessage(req.id, textarea.value);
+                          }}
+                        >
+                          Send
+                        </Button>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            ))}
+          
+          {requests.filter(req => req.type === 'advice' && req.targetId === (user?.id || 'spec1')).length === 0 && (
+            <p className="text-center text-muted-foreground py-6">No advice requests from farmers yet.</p>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+  
+  return (
+    <div className="w-full">
+      {role === 'farmer' && <FarmerPanel />}
+      {role === 'supplier' && <SupplierPanel />}
+      {role === 'specialist' && <SpecialistPanel />}
+    </div>
+  );
+}
+
