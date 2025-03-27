@@ -36,7 +36,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         if (currentSession?.user) {
           // Fetch the user's profile from Supabase
-          fetchUserProfile(currentSession.user.id);
+          // Use setTimeout to prevent potential Supabase deadlock
+          setTimeout(() => {
+            fetchUserProfile(currentSession.user.id);
+          }, 0);
         } else {
           setUser(null);
           setIsLoading(false);
@@ -76,6 +79,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Function to fetch user profile from Supabase
   const fetchUserProfile = async (userId: string) => {
     try {
+      console.log('Fetching user profile for:', userId);
+      
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -98,6 +103,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
         setUser(userProfile);
         console.log('User profile loaded:', userProfile);
+      } else {
+        console.log('No profile found for user ID:', userId);
+        
+        // If no profile exists yet, try to get basic info from auth
+        if (session?.user) {
+          const authUser = session.user;
+          const userProfile: User = {
+            id: authUser.id,
+            name: authUser.user_metadata?.name || 'User',
+            email: authUser.email || '',
+            role: (authUser.user_metadata?.role as UserRole) || 'farmer',
+          };
+          setUser(userProfile);
+          console.log('Created basic profile from auth data:', userProfile);
+        }
       }
     } catch (error) {
       console.error('Failed to fetch user profile:', error);
@@ -115,18 +135,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true);
     try {
+      console.log(`Attempting login for ${email} with Supabase...`);
+      
       // First try Supabase login
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      console.log('Supabase login attempt:', data, error);
-
       if (error) {
-        console.log('Supabase login failed, trying mock system:', error.message);
+        console.error('Supabase login error:', error.message);
         
         // If Supabase fails, fall back to mock data for development
+        console.log('Trying mock login system...');
+        
         // Find user with matching credentials in mock data
         const MOCK_USERS = [
           {
@@ -165,7 +187,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           localStorage.setItem('farmlytic_user', JSON.stringify(userWithoutPassword));
           
           console.log('Mock login successful:', userWithoutPassword);
-          
           return true;
         } else {
           console.log('Mock login failed: User not found or incorrect credentials');
@@ -192,6 +213,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const register = async (name: string, email: string, password: string, role: UserRole): Promise<boolean> => {
     setIsLoading(true);
     try {
+      console.log(`Attempting to register ${email} with role ${role}...`);
+      
       // Register with Supabase
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -204,12 +227,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       });
 
-      console.log('Supabase registration attempt:', data, error);
-
       if (error) {
-        console.log('Supabase registration failed, using mock system:', error.message);
+        console.error('Supabase registration error:', error.message);
         
         // If Supabase fails, fall back to mock data for development
+        console.log('Using mock registration system...');
+        
         // Check if user already exists in mock data
         const MOCK_USERS = [
           {
@@ -270,8 +293,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.log('Supabase registration successful:', data.user);
         
         // If Supabase registration is successful but there's no automatic sign-in,
-        // we might want to automatically sign in the user
+        // we automatically sign in the user
         if (!data.session) {
+          console.log('No session after signup, attempting auto-login...');
+          
+          // Add a small delay to ensure the user is fully created in Supabase
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
           const { error: signInError } = await supabase.auth.signInWithPassword({
             email,
             password
@@ -279,6 +307,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           
           if (signInError) {
             console.error('Auto sign-in after registration failed:', signInError);
+          } else {
+            console.log('Auto sign-in after registration succeeded');
           }
         }
         
