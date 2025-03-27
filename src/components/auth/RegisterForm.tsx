@@ -46,6 +46,8 @@ export function RegisterForm() {
   const onSubmit = async (data: RegisterFormValues) => {    
     try {
       setIsSubmitting(true);
+      console.log("Attempting registration with:", data.email, data.role);
+      
       const success = await register(data.name, data.email, data.password, data.role);
       
       if (success) {

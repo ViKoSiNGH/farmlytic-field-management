@@ -30,15 +30,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Set up auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, currentSession) => {
+      (event, currentSession) => {
         console.log('Auth state changed:', event, currentSession);
         setSession(currentSession);
         
         if (currentSession?.user) {
           // Fetch the user's profile from Supabase
-          await fetchUserProfile(currentSession.user.id);
+          fetchUserProfile(currentSession.user.id);
         } else {
           setUser(null);
+          setIsLoading(false);
         }
       }
     );
@@ -96,6 +97,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           phone: data.phone || undefined
         };
         setUser(userProfile);
+        console.log('User profile loaded:', userProfile);
       }
     } catch (error) {
       console.error('Failed to fetch user profile:', error);
@@ -118,6 +120,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email,
         password,
       });
+
+      console.log('Supabase login attempt:', data, error);
 
       if (error) {
         console.log('Supabase login failed, trying mock system:', error.message);
@@ -160,39 +164,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(userWithoutPassword);
           localStorage.setItem('farmlytic_user', JSON.stringify(userWithoutPassword));
           
-          toast({
-            title: "Login Successful",
-            description: `Welcome back, ${foundUser.name}!`
-          });
+          console.log('Mock login successful:', userWithoutPassword);
           
           return true;
         } else {
-          toast({
-            title: "Login Failed",
-            description: "Invalid email or password.",
-            variant: "destructive",
-          });
+          console.log('Mock login failed: User not found or incorrect credentials');
           return false;
         }
       }
 
       // Supabase login successful
       if (data.user) {
-        toast({
-          title: "Login Successful",
-          description: "Welcome back!"
-        });
+        console.log('Supabase login successful:', data.user);
         return true;
       }
 
       return false;
     } catch (error) {
       console.error('Login error:', error);
-      toast({
-        title: "Login Error",
-        description: "An unexpected error occurred. Please try again.",
-        variant: "destructive",
-      });
       return false;
     } finally {
       setIsLoading(false);
@@ -214,6 +203,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           },
         }
       });
+
+      console.log('Supabase registration attempt:', data, error);
 
       if (error) {
         console.log('Supabase registration failed, using mock system:', error.message);
@@ -247,11 +238,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const existingUser = MOCK_USERS.find(u => u.email === email);
         
         if (existingUser) {
-          toast({
-            title: "Registration Failed",
-            description: "An account with this email already exists.",
-            variant: "destructive",
-          });
+          console.log('Mock registration failed: User already exists');
           return false;
         }
         
@@ -274,30 +261,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(userWithoutPassword);
         localStorage.setItem('farmlytic_user', JSON.stringify(userWithoutPassword));
         
-        toast({
-          title: "Registration Successful",
-          description: `Welcome to FarmLytic, ${name}!`,
-        });
+        console.log('Mock registration successful:', userWithoutPassword);
         return true;
       }
 
       // Supabase registration successful
       if (data.user) {
-        toast({
-          title: "Registration Successful",
-          description: `Welcome to FarmLytic, ${name}!`,
-        });
+        console.log('Supabase registration successful:', data.user);
         return true;
       }
 
       return false;
     } catch (error) {
       console.error('Registration error:', error);
-      toast({
-        title: "Registration Error",
-        description: "An unexpected error occurred. Please try again.",
-        variant: "destructive",
-      });
       return false;
     } finally {
       setIsLoading(false);
@@ -306,19 +282,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Logout function
   const logout = async () => {
-    // First try Supabase logout
-    if (session) {
-      await supabase.auth.signOut();
+    try {
+      // First try Supabase logout
+      if (session) {
+        await supabase.auth.signOut();
+      }
+      
+      // Also clear local storage
+      setUser(null);
+      localStorage.removeItem('farmlytic_user');
+      
+      console.log('User logged out successfully');
+      
+      toast({
+        title: "Logged Out",
+        description: "You have been successfully logged out.",
+      });
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast({
+        title: "Logout Error",
+        description: "An error occurred during logout. Please try again.",
+        variant: "destructive",
+      });
     }
-    
-    // Also clear local storage
-    setUser(null);
-    localStorage.removeItem('farmlytic_user');
-    
-    toast({
-      title: "Logged Out",
-      description: "You have been successfully logged out.",
-    });
   };
 
   const value = {

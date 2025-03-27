@@ -35,7 +35,10 @@ export function LoginForm() {
   const onSubmit = async (data: LoginFormValues) => {
     try {
       setIsSubmitting(true);
-      const success = await login(data.email, data.password);
+      const { email, password } = data;
+      console.log("Attempting login with:", email);
+      
+      const success = await login(email, password);
       
       if (success) {
         toast({

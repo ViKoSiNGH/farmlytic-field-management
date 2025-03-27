@@ -1,7 +1,6 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Layout } from '@/components/Layout';
-import { CropManagement } from '@/components/CropManagement';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -11,36 +10,24 @@ import { useToast } from '@/hooks/use-toast';
 import { Plus, Search, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { SeedlingIcon } from '@/components/GardenIcon';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/use-auth';
+import { Textarea } from '@/components/ui/textarea';
 
-// Sample data for demonstration
-const initialCrops = [
-  {
-    name: 'Wheat',
-    activeFields: 2,
-    totalHectares: 18.3,
-    growthProgress: 65,
-    plantingDate: 'Mar 15, 2023',
-    estimatedHarvest: 'Jul 20, 2023',
-    tasks: [
-      { name: 'Apply fertilizer', dueDate: 'May 15', completed: true },
-      { name: 'Irrigation check', dueDate: 'May 25', completed: false },
-      { name: 'Pest control', dueDate: 'Jun 05', completed: false }
-    ]
-  },
-  {
-    name: 'Corn',
-    activeFields: 1,
-    totalHectares: 8.2,
-    growthProgress: 45,
-    plantingDate: 'Apr 05, 2023',
-    estimatedHarvest: 'Aug 10, 2023',
-    tasks: [
-      { name: 'Weed control', dueDate: 'May 10', completed: true },
-      { name: 'Irrigation check', dueDate: 'May 20', completed: true },
-      { name: 'Fertilization', dueDate: 'May 30', completed: false }
-    ]
-  }
-];
+interface Crop {
+  id: string;
+  name: string;
+  activeFields: number;
+  totalHectares: number;
+  growthProgress: number;
+  plantingDate: string;
+  estimatedHarvest: string;
+  tasks: {
+    name: string;
+    dueDate: string;
+    completed: boolean;
+  }[];
+}
 
 interface CropFormValues {
   name: string;
@@ -62,12 +49,13 @@ interface TaskFormValues {
 }
 
 export default function Crops() {
-  const [crops, setCrops] = useState(initialCrops);
+  const [crops, setCrops] = useState<Crop[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
   const [selectedCropIndex, setSelectedCropIndex] = useState(0);
   const { toast } = useToast();
+  const { user } = useAuth();
   
   const form = useForm<CropFormValues>({
     defaultValues: {
@@ -92,7 +80,100 @@ export default function Crops() {
     },
   });
 
-  const onSubmit = (data: CropFormValues) => {
+  useEffect(() => {
+    fetchCrops();
+  }, [user]);
+
+  const fetchCrops = async () => {
+    if (!user) return;
+
+    try {
+      // First try to fetch from Supabase
+      const { data, error } = await supabase
+        .from('crops')
+        .select('*')
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Error fetching crops from Supabase:', error);
+        // Fall back to local storage
+        const savedCrops = localStorage.getItem('farmlytic_crops');
+        if (savedCrops) {
+          try {
+            setCrops(JSON.parse(savedCrops));
+          } catch (e) {
+            console.error('Failed to parse saved crops:', e);
+            setCrops(getSampleCrops());
+          }
+        } else {
+          setCrops(getSampleCrops());
+        }
+      } else if (data && data.length > 0) {
+        // Convert Supabase data to our Crop interface
+        const fetchedCrops: Crop[] = data.map(cropData => ({
+          id: cropData.id,
+          name: cropData.name,
+          activeFields: 1,
+          totalHectares: 10,
+          growthProgress: 0,
+          plantingDate: cropData.planted_date || new Date().toISOString().split('T')[0],
+          estimatedHarvest: cropData.expected_harvest_date || new Date().toISOString().split('T')[0],
+          tasks: []
+        }));
+        setCrops(fetchedCrops);
+      } else {
+        // No crops in Supabase, use sample data
+        setCrops(getSampleCrops());
+      }
+    } catch (error) {
+      console.error('Failed to fetch crops:', error);
+      setCrops(getSampleCrops());
+    }
+  };
+
+  const getSampleCrops = (): Crop[] => {
+    return [
+      {
+        id: 'crop1',
+        name: 'Wheat',
+        activeFields: 2,
+        totalHectares: 18.3,
+        growthProgress: 65,
+        plantingDate: 'Mar 15, 2023',
+        estimatedHarvest: 'Jul 20, 2023',
+        tasks: [
+          { name: 'Apply fertilizer', dueDate: 'May 15', completed: true },
+          { name: 'Irrigation check', dueDate: 'May 25', completed: false },
+          { name: 'Pest control', dueDate: 'Jun 05', completed: false }
+        ]
+      },
+      {
+        id: 'crop2',
+        name: 'Corn',
+        activeFields: 1,
+        totalHectares: 8.2,
+        growthProgress: 45,
+        plantingDate: 'Apr 05, 2023',
+        estimatedHarvest: 'Aug 10, 2023',
+        tasks: [
+          { name: 'Weed control', dueDate: 'May 10', completed: true },
+          { name: 'Irrigation check', dueDate: 'May 20', completed: true },
+          { name: 'Fertilization', dueDate: 'May 30', completed: false }
+        ]
+      }
+    ];
+  };
+
+  const onSubmit = async (data: CropFormValues) => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to add crops.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     const tasks = [
       { 
         name: data.task1, 
@@ -110,6 +191,7 @@ export default function Crops() {
     }
     
     const newCrop = {
+      id: `crop-${Date.now()}`,
       name: data.name,
       activeFields: data.activeFields,
       totalHectares: data.totalHectares,
@@ -118,8 +200,39 @@ export default function Crops() {
       estimatedHarvest: data.estimatedHarvest,
       tasks: tasks
     };
+
+    try {
+      // First, save to Supabase
+      const { data: supabaseData, error } = await supabase
+        .from('crops')
+        .insert([{
+          user_id: user.id,
+          name: newCrop.name,
+          planted_date: newCrop.plantingDate,
+          expected_harvest_date: newCrop.estimatedHarvest,
+          status: 'active',
+          notes: `Fields: ${newCrop.activeFields}, Hectares: ${newCrop.totalHectares}, Progress: ${newCrop.growthProgress}%`
+        }])
+        .select();
+
+      if (error) {
+        console.error('Error saving crop to Supabase:', error);
+        // If Supabase fails, just update local state
+      } else if (supabaseData && supabaseData.length > 0) {
+        // Update the ID with the one from Supabase
+        newCrop.id = supabaseData[0].id;
+      }
+    } catch (error) {
+      console.error('Failed to save crop to Supabase:', error);
+    }
     
-    setCrops([...crops, newCrop]);
+    // Update local state regardless of Supabase result
+    const updatedCrops = [...crops, newCrop];
+    setCrops(updatedCrops);
+    
+    // Also save to local storage as backup
+    localStorage.setItem('farmlytic_crops', JSON.stringify(updatedCrops));
+    
     setIsDialogOpen(false);
     form.reset();
     
@@ -138,6 +251,7 @@ export default function Crops() {
     });
     
     setCrops(updatedCrops);
+    localStorage.setItem('farmlytic_crops', JSON.stringify(updatedCrops));
     setIsTaskDialogOpen(false);
     taskForm.reset();
     
@@ -147,10 +261,31 @@ export default function Crops() {
     });
   };
 
-  const handleRemoveCrop = (index: number) => {
+  const handleRemoveCrop = async (index: number) => {
+    const cropToRemove = crops[index];
     const updatedCrops = [...crops];
     updatedCrops.splice(index, 1);
+    
+    if (user) {
+      try {
+        // Remove from Supabase
+        const { error } = await supabase
+          .from('crops')
+          .delete()
+          .eq('id', cropToRemove.id);
+          
+        if (error) {
+          console.error('Error removing crop from Supabase:', error);
+        }
+      } catch (error) {
+        console.error('Failed to remove crop from Supabase:', error);
+      }
+    }
+    
+    // Update local state and storage
     setCrops(updatedCrops);
+    localStorage.setItem('farmlytic_crops', JSON.stringify(updatedCrops));
+    
     toast({
       title: "Crop Removed",
       description: "The crop has been removed from your dashboard.",
@@ -161,12 +296,15 @@ export default function Crops() {
     const updatedCrops = [...crops];
     updatedCrops[cropIndex].tasks[taskIndex].completed = !updatedCrops[cropIndex].tasks[taskIndex].completed;
     setCrops(updatedCrops);
+    localStorage.setItem('farmlytic_crops', JSON.stringify(updatedCrops));
   };
 
   const removeTask = (cropIndex: number, taskIndex: number) => {
     const updatedCrops = [...crops];
     updatedCrops[cropIndex].tasks.splice(taskIndex, 1);
     setCrops(updatedCrops);
+    localStorage.setItem('farmlytic_crops', JSON.stringify(updatedCrops));
+    
     toast({
       title: "Task Removed",
       description: "The task has been removed.",
@@ -226,7 +364,7 @@ export default function Crops() {
                               type="number" 
                               placeholder="1" 
                               {...field} 
-                              onChange={e => field.onChange(parseInt(e.target.value))} 
+                              onChange={e => field.onChange(parseInt(e.target.value) || 1)} 
                               required 
                             />
                           </FormControl>
@@ -246,7 +384,7 @@ export default function Crops() {
                               type="number" 
                               placeholder="10.5" 
                               {...field} 
-                              onChange={e => field.onChange(parseFloat(e.target.value))} 
+                              onChange={e => field.onChange(parseFloat(e.target.value) || 0)} 
                               required 
                             />
                           </FormControl>
@@ -267,7 +405,7 @@ export default function Crops() {
                             type="number" 
                             placeholder="50" 
                             {...field} 
-                            onChange={e => field.onChange(parseInt(e.target.value))} 
+                            onChange={e => field.onChange(parseInt(e.target.value) || 0)} 
                             required 
                           />
                         </FormControl>
@@ -399,7 +537,7 @@ export default function Crops() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {filteredCrops.length > 0 ? (
             filteredCrops.map((crop, index) => (
-              <Card key={index} className="glass-card hover-card-effect relative overflow-hidden">
+              <Card key={crop.id} className="glass-card hover-card-effect relative overflow-hidden">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="flex items-center text-xl">
                     <SeedlingIcon className="h-5 w-5 mr-2 text-primary" />
