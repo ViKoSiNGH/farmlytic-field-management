@@ -28,14 +28,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Initialize auth state
   useEffect(() => {
+    let mounted = true;
+    
     // Set up auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, currentSession) => {
         console.log('Auth state changed:', event, currentSession);
+        
+        if (!mounted) return;
+        
         setSession(currentSession);
         
         if (currentSession?.user) {
-          // Fetch the user's profile from Supabase
           // Use setTimeout to prevent potential Supabase deadlock
           setTimeout(() => {
             fetchUserProfile(currentSession.user.id);
@@ -48,30 +52,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     );
 
     // Then check for existing session
-    supabase.auth.getSession().then(async ({ data: { session: currentSession } }) => {
-      console.log('Initial session check:', currentSession);
-      setSession(currentSession);
-      
-      if (currentSession?.user) {
-        // Fetch the user's profile from Supabase
-        await fetchUserProfile(currentSession.user.id);
-      } else {
-        // Check if we have a locally saved user for development
-        const savedUser = localStorage.getItem('farmlytic_user');
-        if (savedUser) {
-          try {
-            const parsedUser = JSON.parse(savedUser);
-            setUser(parsedUser);
-          } catch (error) {
-            console.error('Failed to parse saved user:', error);
-            localStorage.removeItem('farmlytic_user');
+    const initSession = async () => {
+      try {
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        console.log('Initial session check:', currentSession);
+        
+        if (!mounted) return;
+        
+        setSession(currentSession);
+        
+        if (currentSession?.user) {
+          // Fetch the user's profile from Supabase with a small delay
+          setTimeout(() => {
+            fetchUserProfile(currentSession.user.id);
+          }, 100);
+        } else {
+          // Check if we have a locally saved user for development
+          const savedUser = localStorage.getItem('farmlytic_user');
+          if (savedUser) {
+            try {
+              const parsedUser = JSON.parse(savedUser);
+              setUser(parsedUser);
+            } catch (error) {
+              console.error('Failed to parse saved user:', error);
+              localStorage.removeItem('farmlytic_user');
+            }
           }
+          setIsLoading(false);
         }
+      } catch (error) {
+        console.error('Error checking session:', error);
         setIsLoading(false);
       }
-    });
+    };
+
+    initSession();
 
     return () => {
+      mounted = false;
       subscription.unsubscribe();
     };
   }, []);
@@ -102,6 +120,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           phone: data.phone || undefined
         };
         setUser(userProfile);
+        // Also save to localStorage as fallback for development
+        localStorage.setItem('farmlytic_user', JSON.stringify(userProfile));
         console.log('User profile loaded:', userProfile);
       } else {
         console.log('No profile found for user ID:', userId);
@@ -116,7 +136,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             role: (authUser.user_metadata?.role as UserRole) || 'farmer',
           };
           setUser(userProfile);
+          // Also save to localStorage as fallback for development
+          localStorage.setItem('farmlytic_user', JSON.stringify(userProfile));
           console.log('Created basic profile from auth data:', userProfile);
+          
+          // Try to create the profile in the database
+          try {
+            const { error: insertError } = await supabase
+              .from('profiles')
+              .insert({
+                id: authUser.id,
+                name: authUser.user_metadata?.name || 'User',
+                email: authUser.email || '',
+                role: authUser.user_metadata?.role || 'farmer'
+              });
+              
+            if (insertError) {
+              console.error('Error creating user profile:', insertError);
+            } else {
+              console.log('Created profile in database');
+            }
+          } catch (insertError) {
+            console.error('Failed to create profile:', insertError);
+          }
         }
       }
     } catch (error) {
@@ -145,6 +187,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (error) {
         console.error('Supabase login error:', error.message);
+        
+        // Check if error is related to email confirmation
+        if (error.message.includes('Email not confirmed')) {
+          toast({
+            title: "Email Not Confirmed",
+            description: "Please check your email inbox to confirm your account before logging in.",
+            variant: "destructive",
+          });
+          setIsLoading(false);
+          return false;
+        }
         
         // If Supabase fails, fall back to mock data for development
         console.log('Trying mock login system...');
@@ -187,9 +240,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           localStorage.setItem('farmlytic_user', JSON.stringify(userWithoutPassword));
           
           console.log('Mock login successful:', userWithoutPassword);
+          toast({
+            title: "Login Successful",
+            description: `Welcome back, ${userWithoutPassword.name}!`,
+          });
           return true;
         } else {
           console.log('Mock login failed: User not found or incorrect credentials');
+          toast({
+            title: "Login Failed",
+            description: "Invalid email or password. Please try again.",
+            variant: "destructive",
+          });
           return false;
         }
       }
@@ -197,12 +259,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Supabase login successful
       if (data.user) {
         console.log('Supabase login successful:', data.user);
+        toast({
+          title: "Login Successful",
+          description: "Welcome back!",
+        });
         return true;
       }
 
+      toast({
+        title: "Login Failed",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      });
       return false;
     } catch (error) {
       console.error('Login error:', error);
+      toast({
+        title: "Login Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      });
       return false;
     } finally {
       setIsLoading(false);
@@ -229,6 +305,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (error) {
         console.error('Supabase registration error:', error.message);
+        
+        // Handle specific Supabase errors
+        if (error.message.includes('User already registered')) {
+          toast({
+            title: "Registration Failed",
+            description: "An account with this email already exists. Please try logging in instead.",
+            variant: "destructive",
+          });
+          setIsLoading(false);
+          return false;
+        }
         
         // If Supabase fails, fall back to mock data for development
         console.log('Using mock registration system...');
@@ -262,6 +349,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         if (existingUser) {
           console.log('Mock registration failed: User already exists');
+          toast({
+            title: "Registration Failed",
+            description: "An account with this email already exists. Please try logging in instead.",
+            variant: "destructive",
+          });
           return false;
         }
         
@@ -285,20 +377,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         localStorage.setItem('farmlytic_user', JSON.stringify(userWithoutPassword));
         
         console.log('Mock registration successful:', userWithoutPassword);
+        toast({
+          title: "Registration Successful",
+          description: `Welcome to FarmLytic, ${name}!`,
+        });
         return true;
       }
 
       // Supabase registration successful
       if (data.user) {
         console.log('Supabase registration successful:', data.user);
+        toast({
+          title: "Registration Successful",
+          description: `Welcome to FarmLytic, ${name}!`,
+        });
         
         // If Supabase registration is successful but there's no automatic sign-in,
         // we automatically sign in the user
         if (!data.session) {
           console.log('No session after signup, attempting auto-login...');
           
-          // Add a small delay to ensure the user is fully created in Supabase
-          await new Promise(resolve => setTimeout(resolve, 500));
+          // Add a delay to ensure the user is fully created in Supabase
+          await new Promise(resolve => setTimeout(resolve, 1000));
           
           const { error: signInError } = await supabase.auth.signInWithPassword({
             email,
@@ -307,6 +407,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           
           if (signInError) {
             console.error('Auto sign-in after registration failed:', signInError);
+            toast({
+              title: "Almost Done",
+              description: "Registration successful! Please check your email to confirm your account, then log in.",
+            });
           } else {
             console.log('Auto sign-in after registration succeeded');
           }
@@ -315,9 +419,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return true;
       }
 
+      toast({
+        title: "Registration Failed",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      });
       return false;
     } catch (error) {
       console.error('Registration error:', error);
+      toast({
+        title: "Registration Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      });
       return false;
     } finally {
       setIsLoading(false);

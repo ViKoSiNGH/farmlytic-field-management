@@ -16,6 +16,8 @@ import Crops from "./pages/Crops";
 import Weather from "./pages/Weather";
 import Analytics from "./pages/Analytics";
 import Farmer from "./pages/Farmer";
+import Supplier from "./pages/Supplier";
+import Specialist from "./pages/Specialist";
 
 const queryClient = new QueryClient();
 
@@ -51,10 +53,42 @@ const ProtectedRoute = ({
   
   // If there are allowed roles specified and the user's role is not in the list
   if (allowedRoles.length > 0 && user && !allowedRoles.includes(user.role)) {
+    // Redirect to their role-specific page
+    if (user.role === 'farmer') {
+      return <Navigate to="/farmer" replace />;
+    } else if (user.role === 'supplier') {
+      return <Navigate to="/supplier" replace />;
+    } else if (user.role === 'specialist') {
+      return <Navigate to="/specialist" replace />;
+    }
     return <Navigate to="/" replace />;
   }
   
   return <>{children}</>;
+};
+
+// Home page redirection based on user role
+const HomeRedirect = () => {
+  const { user, isAuthenticated, isLoading } = useAuth();
+  
+  if (isLoading) {
+    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+  }
+  
+  if (!isAuthenticated) {
+    return <Index />;
+  }
+  
+  // Redirect based on role
+  if (user?.role === 'farmer') {
+    return <Navigate to="/farmer" replace />;
+  } else if (user?.role === 'supplier') {
+    return <Navigate to="/supplier" replace />;
+  } else if (user?.role === 'specialist') {
+    return <Navigate to="/specialist" replace />;
+  }
+  
+  return <Index />;
 };
 
 const App = () => (
@@ -66,7 +100,7 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <Routes>
-              <Route path="/" element={<Index />} />
+              <Route path="/" element={<HomeRedirect />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/fields" element={
@@ -75,7 +109,7 @@ const App = () => (
                 </ProtectedRoute>
               } />
               <Route path="/crops" element={
-                <ProtectedRoute>
+                <ProtectedRoute allowedRoles={['farmer']}>
                   <Crops />
                 </ProtectedRoute>
               } />
@@ -92,6 +126,16 @@ const App = () => (
               <Route path="/farmer" element={
                 <ProtectedRoute allowedRoles={['farmer']}>
                   <Farmer />
+                </ProtectedRoute>
+              } />
+              <Route path="/supplier" element={
+                <ProtectedRoute allowedRoles={['supplier']}>
+                  <Supplier />
+                </ProtectedRoute>
+              } />
+              <Route path="/specialist" element={
+                <ProtectedRoute allowedRoles={['specialist']}>
+                  <Specialist />
                 </ProtectedRoute>
               } />
               {/* Make sure the catch-all route is the last one */}
