@@ -31,6 +31,7 @@ export function RegisterForm() {
   const { register } = useAuth();
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
   
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
@@ -46,6 +47,7 @@ export function RegisterForm() {
   const onSubmit = async (data: RegisterFormValues) => {    
     try {
       setIsSubmitting(true);
+      setAuthError(null);
       console.log("Attempting registration with:", data.email, data.role);
       
       const success = await register(data.name, data.email, data.password, data.role);
@@ -57,6 +59,7 @@ export function RegisterForm() {
         });
         navigate('/');
       } else {
+        setAuthError("Registration failed. An account with this email might already exist.");
         toast({
           title: "Registration Failed",
           description: "An account with this email might already exist.",
@@ -65,6 +68,7 @@ export function RegisterForm() {
       }
     } catch (error) {
       console.error('Registration error:', error);
+      setAuthError("An unexpected error occurred. Please try again.");
       toast({
         title: "Registration Error",
         description: "An unexpected error occurred. Please try again.",
@@ -81,6 +85,12 @@ export function RegisterForm() {
         <h1 className="text-3xl font-bold">Create an Account</h1>
         <p className="text-muted-foreground">Register to access FarmLytic</p>
       </div>
+      
+      {authError && (
+        <div className="p-3 rounded-md bg-destructive/10 text-destructive text-sm">
+          {authError}
+        </div>
+      )}
       
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">

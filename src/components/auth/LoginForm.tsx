@@ -23,6 +23,7 @@ export function LoginForm() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
   
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -35,6 +36,7 @@ export function LoginForm() {
   const onSubmit = async (data: LoginFormValues) => {
     try {
       setIsSubmitting(true);
+      setAuthError(null);
       const { email, password } = data;
       console.log("Attempting login with:", email);
       
@@ -47,6 +49,7 @@ export function LoginForm() {
         });
         navigate('/');
       } else {
+        setAuthError("Invalid email or password. Please try again.");
         toast({
           title: "Login Failed",
           description: "Invalid email or password. Please try again.",
@@ -55,6 +58,7 @@ export function LoginForm() {
       }
     } catch (error) {
       console.error('Login error:', error);
+      setAuthError("An unexpected error occurred. Please try again.");
       toast({
         title: "Login Error",
         description: "An unexpected error occurred. Please try again.",
@@ -71,6 +75,12 @@ export function LoginForm() {
         <h1 className="text-3xl font-bold">Login to FarmLytic</h1>
         <p className="text-muted-foreground">Enter your credentials to access your account</p>
       </div>
+      
+      {authError && (
+        <div className="p-3 rounded-md bg-destructive/10 text-destructive text-sm">
+          {authError}
+        </div>
+      )}
       
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">

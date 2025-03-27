@@ -80,7 +80,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('Error fetching user profile:', error);
@@ -268,6 +268,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Supabase registration successful
       if (data.user) {
         console.log('Supabase registration successful:', data.user);
+        
+        // If Supabase registration is successful but there's no automatic sign-in,
+        // we might want to automatically sign in the user
+        if (!data.session) {
+          const { error: signInError } = await supabase.auth.signInWithPassword({
+            email,
+            password
+          });
+          
+          if (signInError) {
+            console.error('Auto sign-in after registration failed:', signInError);
+          }
+        }
+        
         return true;
       }
 
