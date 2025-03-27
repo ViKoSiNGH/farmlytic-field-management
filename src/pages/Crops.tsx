@@ -210,7 +210,7 @@ export default function Crops() {
           name: newCrop.name,
           planted_date: newCrop.plantingDate,
           expected_harvest_date: newCrop.estimatedHarvest,
-          status: 'active',
+          status: 'growing',
           notes: `Fields: ${newCrop.activeFields}, Hectares: ${newCrop.totalHectares}, Progress: ${newCrop.growthProgress}%`
         }])
         .select();

@@ -86,10 +86,45 @@ export function SpecialistPanel() {
       }
       
       if (data) {
-        const formattedRequests: FarmerRequest[] = data.map(req => ({
-          ...req,
-          createdAt: new Date(req.created_at)
-        }));
+        // Fetch the farmer names for each request
+        const formattedRequests: FarmerRequest[] = await Promise.all(
+          data.map(async (req) => {
+            let farmerName = "Unknown Farmer";
+            
+            // Try to get the farmer's name
+            try {
+              const { data: profileData, error: profileError } = await supabase
+                .from('profiles')
+                .select('name')
+                .eq('id', req.farmer_id)
+                .single();
+                
+              if (!profileError && profileData) {
+                farmerName = profileData.name;
+              }
+            } catch (e) {
+              console.error('Error fetching farmer name:', e);
+            }
+            
+            return {
+              id: req.id,
+              farmerId: req.farmer_id,
+              farmerName: farmerName,
+              type: req.type as 'purchase' | 'advice',
+              item: req.item || undefined,
+              quantity: req.quantity || undefined,
+              description: req.description,
+              status: req.status as 'pending' | 'accepted' | 'rejected',
+              createdAt: new Date(req.created_at),
+              targetId: req.target_id || undefined,
+              response: req.response || undefined,
+              contactPhone: req.contact_phone || undefined,
+              contactEmail: req.contact_email || undefined,
+              isCustom: req.is_custom || false
+            };
+          })
+        );
+        
         setRequests(formattedRequests);
       }
     } catch (error) {

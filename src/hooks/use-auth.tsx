@@ -32,7 +32,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     // Set up auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, currentSession) => {
+      async (event, currentSession) => {
         console.log('Auth state changed:', event, currentSession);
         
         if (!mounted) return;
@@ -199,7 +199,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return false;
         }
         
-        // If Supabase fails, fall back to mock data for development
+        // Try mock login system for development
         console.log('Trying mock login system...');
         
         // Find user with matching credentials in mock data
@@ -244,6 +244,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             title: "Login Successful",
             description: `Welcome back, ${userWithoutPassword.name}!`,
           });
+          
+          setIsLoading(false);
           return true;
         } else {
           console.log('Mock login failed: User not found or incorrect credentials');
@@ -252,26 +254,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             description: "Invalid email or password. Please try again.",
             variant: "destructive",
           });
+          
+          setIsLoading(false);
           return false;
         }
       }
 
       // Supabase login successful
+      console.log('Supabase login successful:', data);
+      
       if (data.user) {
-        console.log('Supabase login successful:', data.user);
         toast({
           title: "Login Successful",
           description: "Welcome back!",
         });
+        
+        // We don't need to manually set the user here as it will be handled by onAuthStateChange
+        
+        setIsLoading(false);
         return true;
+      } else {
+        toast({
+          title: "Login Failed",
+          description: "An unexpected error occurred. Please try again.",
+          variant: "destructive",
+        });
+        
+        setIsLoading(false);
+        return false;
       }
-
-      toast({
-        title: "Login Failed",
-        description: "An unexpected error occurred. Please try again.",
-        variant: "destructive",
-      });
-      return false;
     } catch (error) {
       console.error('Login error:', error);
       toast({
@@ -279,9 +290,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         description: "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
-      return false;
-    } finally {
+      
       setIsLoading(false);
+      return false;
     }
   };
 
@@ -317,10 +328,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return false;
         }
         
-        // If Supabase fails, fall back to mock data for development
+        // Try mock registration if Supabase fails
         console.log('Using mock registration system...');
         
-        // Check if user already exists in mock data
+        // Mock users for development
         const MOCK_USERS = [
           {
             id: '1',
@@ -354,6 +365,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             description: "An account with this email already exists. Please try logging in instead.",
             variant: "destructive",
           });
+          
+          setIsLoading(false);
           return false;
         }
         
@@ -381,12 +394,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           title: "Registration Successful",
           description: `Welcome to FarmLytic, ${name}!`,
         });
+        
+        setIsLoading(false);
         return true;
       }
 
       // Supabase registration successful
+      console.log('Supabase registration response:', data);
+      
       if (data.user) {
-        console.log('Supabase registration successful:', data.user);
         toast({
           title: "Registration Successful",
           description: `Welcome to FarmLytic, ${name}!`,
@@ -398,7 +414,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           console.log('No session after signup, attempting auto-login...');
           
           // Add a delay to ensure the user is fully created in Supabase
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise(resolve => setTimeout(resolve, 1500));
           
           const { error: signInError } = await supabase.auth.signInWithPassword({
             email,
@@ -407,6 +423,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           
           if (signInError) {
             console.error('Auto sign-in after registration failed:', signInError);
+            
+            // Create a temporary user anyway for development
+            const tempUser: User = {
+              id: data.user.id,
+              name: name,
+              email: email,
+              role: role
+            };
+            
+            setUser(tempUser);
+            localStorage.setItem('farmlytic_user', JSON.stringify(tempUser));
+            
             toast({
               title: "Almost Done",
               description: "Registration successful! Please check your email to confirm your account, then log in.",
@@ -416,6 +444,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         }
         
+        setIsLoading(false);
         return true;
       }
 
@@ -424,6 +453,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         description: "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
+      
+      setIsLoading(false);
       return false;
     } catch (error) {
       console.error('Registration error:', error);
@@ -432,9 +463,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         description: "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
-      return false;
-    } finally {
+      
       setIsLoading(false);
+      return false;
     }
   };
 

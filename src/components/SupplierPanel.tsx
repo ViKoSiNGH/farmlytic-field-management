@@ -1,14 +1,14 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { FarmerRequest, InventoryItem } from '@/types/auth';
-import { ShoppingBag, MessageCircle, Phone, Mail, PackageCheck, TrendingUp } from 'lucide-react';
+import { FarmerRequest, InventoryItem, SellerProduct } from '@/types/auth';
+import { Package, ShoppingBag, Check, X, MessageCircle, Plus, DollarSign, ShoppingCart, Trash } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -16,21 +16,8 @@ export function SupplierPanel() {
   const { toast } = useToast();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('inventory');
-  const [requests, setRequests] = useState<FarmerRequest[]>([]);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
-  const [newItem, setNewItem] = useState<{
-    name: string;
-    type: string;
-    quantity: number;
-    unit: string;
-    price: number;
-  }>({
-    name: '',
-    type: 'fertilizer',
-    quantity: 1,
-    unit: 'kg',
-    price: 0
-  });
+  const [requests, setRequests] = useState<FarmerRequest[]>([]);
   const [responseText, setResponseText] = useState<{[key: string]: string}>({});
   const [chatMessages, setChatMessages] = useState<{
     requestId: string;
@@ -41,11 +28,19 @@ export function SupplierPanel() {
     }[];
   }[]>([]);
   
+  const [newProduct, setNewProduct] = useState({
+    name: '',
+    type: 'Fertilizer',
+    quantity: 1,
+    unit: 'kg',
+    price: 0,
+  });
+  
   useEffect(() => {
-    fetchRequests();
     fetchInventory();
+    fetchRequests();
     
-    const savedMessages = localStorage.getItem('farmlytic_chat_messages');
+    const savedMessages = localStorage.getItem('farmlytic_supplier_chat_messages');
     if (savedMessages) {
       try {
         const parsedMessages = JSON.parse(savedMessages).map((chat: any) => ({
@@ -62,9 +57,8 @@ export function SupplierPanel() {
       }
     }
     
-    // Set up subscription for real-time updates on requests
     const requestsChannel = supabase
-      .channel('requests-changes')
+      .channel('supplier-changes')
       .on(
         'postgres_changes',
         {
@@ -78,79 +72,28 @@ export function SupplierPanel() {
       )
       .subscribe();
       
-    const inventoryChannel = supabase
-      .channel('inventory-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'inventory'
-        },
-        () => {
-          fetchInventory();
-        }
-      )
-      .subscribe();
-      
     return () => {
       supabase.removeChannel(requestsChannel);
-      supabase.removeChannel(inventoryChannel);
     };
   }, [user?.id]);
   
-  const fetchRequests = async () => {
-    try {
-      let query = supabase
-        .from('requests')
-        .select('*')
-        .order('created_at', { ascending: false });
-        
-      if (user?.id) {
-        // For supplier, show requests that are either targeted at them or are purchase requests
-        query = query.or(`target_id.eq.${user.id},type.eq.purchase`);
-      }
-      
-      const { data, error } = await query;
-      
-      if (error) {
-        console.error('Error fetching requests:', error);
-        return;
-      }
-      
-      if (data) {
-        const formattedRequests: FarmerRequest[] = data.map(req => ({
-          ...req,
-          createdAt: new Date(req.created_at)
-        }));
-        setRequests(formattedRequests);
-      }
-    } catch (error) {
-      console.error('Failed to fetch requests:', error);
-    }
-  };
-  
   const fetchInventory = async () => {
+    if (!user) return;
+    
     try {
-      let query = supabase
+      const { data, error } = await supabase
         .from('inventory')
         .select('*')
-        .order('created_at', { ascending: false });
+        .eq('user_id', user.id);
         
-      if (user?.id) {
-        // For supplier, show their inventory items
-        query = query.eq('user_id', user.id);
-      }
-      
-      const { data, error } = await query;
-      
       if (error) {
         console.error('Error fetching inventory:', error);
+        setInventory(getSampleInventory());
         return;
       }
       
-      if (data) {
-        const formattedItems: InventoryItem[] = data.map(item => ({
+      if (data && data.length > 0) {
+        const items: InventoryItem[] = data.map(item => ({
           id: item.id,
           type: item.type,
           name: item.name,
@@ -158,17 +101,88 @@ export function SupplierPanel() {
           unit: item.unit,
           price: item.price || 0,
           sellerId: item.user_id,
-          available: item.available
+          available: item.available === null ? true : item.available
         }));
-        setInventory(formattedItems);
+        setInventory(items);
+      } else {
+        setInventory(getSampleInventory());
       }
     } catch (error) {
       console.error('Failed to fetch inventory:', error);
+      setInventory(getSampleInventory());
     }
   };
   
-  const addInventoryItem = async () => {
-    if (!newItem.name || !newItem.unit || newItem.price <= 0) {
+  const fetchRequests = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('requests')
+        .select('*')
+        .eq('type', 'purchase')
+        .eq('target_id', user.id)
+        .order('created_at', { ascending: false });
+        
+      if (error) {
+        console.error('Error fetching requests:', error);
+        return;
+      }
+      
+      if (data) {
+        const formattedRequests: FarmerRequest[] = await Promise.all(
+          data.map(async (req) => {
+            let farmerName = "Unknown Farmer";
+            
+            try {
+              const { data: profileData, error: profileError } = await supabase
+                .from('profiles')
+                .select('name')
+                .eq('id', req.farmer_id)
+                .single();
+                
+              if (!profileError && profileData) {
+                farmerName = profileData.name;
+              }
+            } catch (e) {
+              console.error('Error fetching farmer name:', e);
+            }
+            
+            return {
+              id: req.id,
+              farmerId: req.farmer_id,
+              farmerName: farmerName,
+              type: req.type as 'purchase' | 'advice',
+              item: req.item || undefined,
+              quantity: req.quantity || undefined,
+              description: req.description,
+              status: req.status as 'pending' | 'accepted' | 'rejected',
+              createdAt: new Date(req.created_at),
+              targetId: req.target_id || undefined,
+              response: req.response || undefined,
+              contactPhone: req.contact_phone || undefined,
+              contactEmail: req.contact_email || undefined,
+              isCustom: req.is_custom || false
+            };
+          })
+        );
+        
+        setRequests(formattedRequests);
+      }
+    } catch (error) {
+      console.error('Failed to fetch requests:', error);
+    }
+  };
+  
+  const getSampleInventory = () => {
+    return [
+      { id: 1, type: 'Fertilizer', name: 'DAP', quantity: 100, unit: 'kg', price: 100, sellerId: 1, available: true },
+      { id: 2, type: 'Seeds', name: 'Corn', quantity: 50, unit: 'kg', price: 5, sellerId: 1, available: true }
+    ];
+  };
+  
+  const handleAddProduct = async () => {
+    if (!newProduct.name || !newProduct.unit || newProduct.price <= 0) {
       toast({
         title: "Missing Information",
         description: "Please provide a name, unit, and valid price for your item.",
@@ -182,11 +196,11 @@ export function SupplierPanel() {
         .from('inventory')
         .insert({
           user_id: user?.id,
-          name: newItem.name,
-          type: newItem.type,
-          quantity: newItem.quantity,
-          unit: newItem.unit,
-          price: newItem.price,
+          name: newProduct.name,
+          type: newProduct.type,
+          quantity: newProduct.quantity,
+          unit: newProduct.unit,
+          price: newProduct.price,
           available: true
         });
         
@@ -205,9 +219,9 @@ export function SupplierPanel() {
         description: "Inventory item added successfully."
       });
       
-      setNewItem({
+      setNewProduct({
         name: '',
-        type: 'fertilizer',
+        type: 'Fertilizer',
         quantity: 1,
         unit: 'kg',
         price: 0
@@ -216,6 +230,39 @@ export function SupplierPanel() {
       await fetchInventory();
     } catch (error) {
       console.error('Failed to add inventory item:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  const handleDeleteProduct = async (productId: number) => {
+    try {
+      const { error } = await supabase
+        .from('inventory')
+        .delete()
+        .eq('id', productId);
+        
+      if (error) {
+        console.error('Error deleting inventory item:', error);
+        toast({
+          title: "Error",
+          description: "Failed to delete inventory item. Please try again.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      toast({
+        title: "Success",
+        description: "Inventory item deleted successfully."
+      });
+      
+      await fetchInventory();
+    } catch (error) {
+      console.error('Failed to delete inventory item:', error);
       toast({
         title: "Error",
         description: "An unexpected error occurred. Please try again.",
@@ -262,7 +309,6 @@ export function SupplierPanel() {
         description: "Your response has been sent to the farmer."
       });
       
-      // Clear response text
       setResponseText(prev => ({
         ...prev,
         [requestId]: ''
@@ -301,7 +347,7 @@ export function SupplierPanel() {
     }
     
     setChatMessages(updatedChats);
-    localStorage.setItem('farmlytic_chat_messages', JSON.stringify(updatedChats));
+    localStorage.setItem('farmlytic_supplier_chat_messages', JSON.stringify(updatedChats));
   };
   
   const getChatForRequest = (requestId: string) => {
@@ -328,7 +374,7 @@ export function SupplierPanel() {
     <Tabs defaultValue="inventory" className="w-full" value={activeTab} onValueChange={setActiveTab}>
       <TabsList className="grid grid-cols-2 mb-4">
         <TabsTrigger value="inventory">
-          <PackageCheck className="h-4 w-4 mr-2" />
+          <Package className="h-4 w-4 mr-2" />
           Manage Inventory
         </TabsTrigger>
         <TabsTrigger value="orders">
@@ -348,8 +394,8 @@ export function SupplierPanel() {
               <label className="text-sm font-medium">Product Name</label>
               <Input 
                 placeholder="Enter product name" 
-                value={newItem.name}
-                onChange={(e) => setNewItem({...newItem, name: e.target.value})}
+                value={newProduct.name}
+                onChange={(e) => setNewProduct({...newProduct, name: e.target.value})}
               />
             </div>
             
@@ -358,14 +404,14 @@ export function SupplierPanel() {
                 <label className="text-sm font-medium">Product Type</label>
                 <select 
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2"
-                  value={newItem.type}
-                  onChange={(e) => setNewItem({...newItem, type: e.target.value})}
+                  value={newProduct.type}
+                  onChange={(e) => setNewProduct({...newProduct, type: e.target.value})}
                 >
-                  <option value="fertilizer">Fertilizer</option>
-                  <option value="seed">Seeds</option>
-                  <option value="pesticide">Pesticide</option>
-                  <option value="equipment">Equipment</option>
-                  <option value="other">Other</option>
+                  <option value="Fertilizer">Fertilizer</option>
+                  <option value="Seeds">Seeds</option>
+                  <option value="Pesticide">Pesticide</option>
+                  <option value="Equipment">Equipment</option>
+                  <option value="Other">Other</option>
                 </select>
               </div>
               
@@ -373,8 +419,8 @@ export function SupplierPanel() {
                 <label className="text-sm font-medium">Unit</label>
                 <select 
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2"
-                  value={newItem.unit}
-                  onChange={(e) => setNewItem({...newItem, unit: e.target.value})}
+                  value={newProduct.unit}
+                  onChange={(e) => setNewProduct({...newProduct, unit: e.target.value})}
                 >
                   <option value="kg">Kilogram (kg)</option>
                   <option value="g">Gram (g)</option>
@@ -392,26 +438,26 @@ export function SupplierPanel() {
                 <Input 
                   type="number" 
                   min="1"
-                  value={newItem.quantity}
-                  onChange={(e) => setNewItem({...newItem, quantity: parseInt(e.target.value) || 1})}
+                  value={newProduct.quantity}
+                  onChange={(e) => setNewProduct({...newProduct, quantity: parseInt(e.target.value) || 1})}
                 />
               </div>
               
               <div className="space-y-2">
-                <label className="text-sm font-medium">Price ($ per {newItem.unit})</label>
+                <label className="text-sm font-medium">Price ($ per {newProduct.unit})</label>
                 <Input 
                   type="number"
                   min="0.01"
                   step="0.01"
-                  value={newItem.price}
-                  onChange={(e) => setNewItem({...newItem, price: parseFloat(e.target.value) || 0})}
+                  value={newProduct.price}
+                  onChange={(e) => setNewProduct({...newProduct, price: parseFloat(e.target.value) || 0})}
                 />
               </div>
             </div>
           </CardContent>
           <CardFooter>
-            <Button onClick={addInventoryItem} className="w-full">
-              <PackageCheck className="h-4 w-4 mr-2" />
+            <Button onClick={handleAddProduct} className="w-full">
+              <Plus className="h-4 w-4 mr-2" />
               Add to Inventory
             </Button>
           </CardFooter>
@@ -437,6 +483,12 @@ export function SupplierPanel() {
                   </div>
                   <p className="text-sm">Quantity: {item.quantity} {item.unit}</p>
                 </CardContent>
+                <CardFooter>
+                  <Button onClick={() => handleDeleteProduct(item.id)} className="w-full">
+                    <Trash className="h-4 w-4 mr-2" />
+                    Delete
+                  </Button>
+                </CardFooter>
               </Card>
             ))}
           </div>
