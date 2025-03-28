@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { FarmerRequest, InventoryItem, SellerProduct } from '@/types/auth';
-import { Package, ShoppingBag, Check, X, MessageCircle, Plus, DollarSign, ShoppingCart, Trash, Mail, Phone } from 'lucide-react';
+import { Package, ShoppingBag, Check, X, MessageCircle, Plus, ShoppingCart, Trash2, Mail, Phone, Indian } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { supabase } from '@/integrations/supabase/client';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
@@ -36,18 +36,20 @@ export function SupplierPanel() {
     type: 'Fertilizer',
     quantity: '',
     unit: 'kg',
-    price: 0,
+    price: '',
   });
   
   // Analytics data for the supplier
   const [analyticsData, setAnalyticsData] = useState([
-    { name: 'Jan', sales: 400, expenses: 300, profit: 100 },
-    { name: 'Feb', sales: 300, expenses: 200, profit: 100 },
-    { name: 'Mar', sales: 500, expenses: 350, profit: 150 },
-    { name: 'Apr', sales: 700, expenses: 400, profit: 300 },
-    { name: 'May', sales: 600, expenses: 450, profit: 150 },
-    { name: 'Jun', sales: 800, expenses: 500, profit: 300 }
+    { name: 'Jan', sales: 45000, expenses: 32000, profit: 13000 },
+    { name: 'Feb', sales: 52000, expenses: 36000, profit: 16000 },
+    { name: 'Mar', sales: 61000, expenses: 42000, profit: 19000 },
+    { name: 'Apr', sales: 58000, expenses: 40000, profit: 18000 },
+    { name: 'May', sales: 63000, expenses: 45000, profit: 18000 },
+    { name: 'Jun', sales: 72000, expenses: 48000, profit: 24000 }
   ]);
+  
+  const [farmerProducts, setFarmerProducts] = useState<any[]>([]);
   
   useEffect(() => {
     fetchInventory();
@@ -141,9 +143,42 @@ export function SupplierPanel() {
         return;
       }
       
-      // Process the data if needed
-      console.log('Farmer products for sale:', data);
-      
+      if (data) {
+        const formattedProducts = await Promise.all(
+          data.map(async (prod) => {
+            let farmerName = "Unknown Farmer";
+            
+            try {
+              const { data: profileData, error: profileError } = await supabase
+                .from('profiles')
+                .select('name')
+                .eq('id', prod.farmer_id)
+                .single();
+                
+              if (!profileError && profileData) {
+                farmerName = profileData.name;
+              }
+            } catch (e) {
+              console.error('Error fetching farmer name:', e);
+            }
+            
+            return {
+              id: prod.id,
+              farmerId: prod.farmer_id,
+              farmerName: farmerName,
+              item: prod.item,
+              quantity: prod.quantity,
+              description: prod.description,
+              status: prod.status,
+              createdAt: new Date(prod.created_at),
+              contactPhone: prod.contact_phone,
+              contactEmail: prod.contact_email
+            };
+          })
+        );
+        
+        setFarmerProducts(formattedProducts);
+      }
     } catch (error) {
       console.error('Failed to fetch farmer products:', error);
     }
@@ -173,15 +208,22 @@ export function SupplierPanel() {
             try {
               const { data: profileData, error: profileError } = await supabase
                 .from('profiles')
-                .select('name')
+                .select('name, phone, email')
                 .eq('id', req.farmer_id)
                 .single();
                 
               if (!profileError && profileData) {
                 farmerName = profileData.name;
+                // If no contact info in request, use profile info
+                if (!req.contact_phone && profileData.phone) {
+                  req.contact_phone = profileData.phone;
+                }
+                if (!req.contact_email && profileData.email) {
+                  req.contact_email = profileData.email;
+                }
               }
             } catch (e) {
-              console.error('Error fetching farmer name:', e);
+              console.error('Error fetching farmer details:', e);
             }
             
             return {
@@ -212,13 +254,13 @@ export function SupplierPanel() {
   
   const getSampleInventory = (): InventoryItem[] => {
     return [
-      { id: "1", type: 'Fertilizer', name: 'DAP', quantity: 100, unit: 'kg', price: 100, sellerId: "1", available: true },
-      { id: "2", type: 'Seeds', name: 'Corn', quantity: 50, unit: 'kg', price: 5, sellerId: "1", available: true }
+      { id: "1", type: 'Fertilizer', name: 'DAP', quantity: 100, unit: 'kg', price: 1200, sellerId: "1", available: true },
+      { id: "2", type: 'Seeds', name: 'Wheat', quantity: 50, unit: 'kg', price: 60, sellerId: "1", available: true }
     ];
   };
   
   const handleAddProduct = async () => {
-    if (!newProduct.name || !newProduct.unit || newProduct.price <= 0) {
+    if (!newProduct.name || !newProduct.unit || !newProduct.price) {
       toast({
         title: "Missing Information",
         description: "Please provide a name, unit, and valid price for your item.",
@@ -236,7 +278,7 @@ export function SupplierPanel() {
           type: newProduct.type,
           quantity: parseInt(newProduct.quantity) || 0,
           unit: newProduct.unit,
-          price: newProduct.price,
+          price: parseFloat(newProduct.price) || 0,
           available: true
         });
         
@@ -260,7 +302,7 @@ export function SupplierPanel() {
         type: 'Fertilizer',
         quantity: '',
         unit: 'kg',
-        price: 0
+        price: ''
       });
       
       await fetchInventory();
@@ -357,7 +399,8 @@ export function SupplierPanel() {
         .from('requests')
         .update({
           status: newStatus,
-          response: response
+          response: response,
+          target_id: user?.id
         })
         .eq('id', requestId);
         
@@ -441,7 +484,7 @@ export function SupplierPanel() {
   
   return (
     <Tabs defaultValue="inventory" className="w-full" value={activeTab} onValueChange={setActiveTab}>
-      <TabsList className="grid grid-cols-3 mb-4">
+      <TabsList className="grid grid-cols-2 mb-4">
         <TabsTrigger value="inventory">
           <Package className="h-4 w-4 mr-2" />
           Manage Inventory
@@ -449,10 +492,6 @@ export function SupplierPanel() {
         <TabsTrigger value="orders">
           <ShoppingBag className="h-4 w-4 mr-2" />
           Purchase Requests
-        </TabsTrigger>
-        <TabsTrigger value="analytics">
-          <DollarSign className="h-4 w-4 mr-2" />
-          Analytics
         </TabsTrigger>
       </TabsList>
       
@@ -517,13 +556,12 @@ export function SupplierPanel() {
               </div>
               
               <div className="space-y-2">
-                <label className="text-sm font-medium">Price ($ per {newProduct.unit})</label>
+                <label className="text-sm font-medium">Price (₹ per {newProduct.unit})</label>
                 <Input 
-                  type="number"
-                  min="0.01"
-                  step="0.01"
+                  type="text"
+                  placeholder="Enter price"
                   value={newProduct.price}
-                  onChange={(e) => setNewProduct({...newProduct, price: parseFloat(e.target.value) || 0})}
+                  onChange={(e) => setNewProduct({...newProduct, price: e.target.value})}
                 />
               </div>
             </div>
@@ -535,6 +573,70 @@ export function SupplierPanel() {
             </Button>
           </CardFooter>
         </Card>
+        
+        <div className="mt-6">
+          <h3 className="text-lg font-medium mb-4">Products Listed by Farmers</h3>
+          {farmerProducts.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {farmerProducts.map(product => (
+                <Card key={product.id}>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-lg">{product.item}</CardTitle>
+                    <CardDescription>Listed by: {product.farmerName}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      <p className="text-sm">Quantity: {product.quantity}</p>
+                      <p className="text-sm">{product.description}</p>
+                      
+                      {(product.contactPhone || product.contactEmail) && (
+                        <div className="flex flex-col space-y-1 mt-2 p-2 bg-muted rounded-md">
+                          {product.contactPhone && (
+                            <div className="flex items-center">
+                              <Phone className="h-4 w-4 mr-2 text-muted-foreground" />
+                              <p className="text-sm">{product.contactPhone}</p>
+                            </div>
+                          )}
+                          {product.contactEmail && (
+                            <div className="flex items-center">
+                              <Mail className="h-4 w-4 mr-2 text-muted-foreground" />
+                              <p className="text-sm">{product.contactEmail}</p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                  <CardFooter>
+                    <Button 
+                      variant="outline" 
+                      className="w-full"
+                      onClick={() => {
+                        setNewProduct({
+                          name: product.item || '',
+                          type: 'Other',
+                          quantity: product.quantity?.toString() || '',
+                          unit: 'kg',
+                          price: ''
+                        });
+                        setActiveTab('inventory');
+                      }}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add to My Inventory
+                    </Button>
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="py-6 text-center text-muted-foreground">
+                No products listed by farmers yet.
+              </CardContent>
+            </Card>
+          )}
+        </div>
         
         <h3 className="text-lg font-medium mt-6">Your Inventory Items</h3>
         {inventory.length > 0 ? (
@@ -548,7 +650,7 @@ export function SupplierPanel() {
                 <CardContent>
                   <div className="flex justify-between items-center mb-2">
                     <p className="text-sm">
-                      Price: <span className="font-medium">${item.price.toFixed(2)}/{item.unit}</span>
+                      Price: <span className="font-medium">₹{item.price.toFixed(2)}/{item.unit}</span>
                     </p>
                     <Badge variant={item.available ? "default" : "outline"}>
                       {item.available ? 'Available' : 'Out of Stock'}
@@ -558,7 +660,7 @@ export function SupplierPanel() {
                 </CardContent>
                 <CardFooter>
                   <Button onClick={() => handleDeleteProduct(item.id)} className="w-full">
-                    <Trash className="h-4 w-4 mr-2" />
+                    <Trash2 className="h-4 w-4 mr-2" />
                     Delete
                   </Button>
                 </CardFooter>
@@ -603,18 +705,23 @@ export function SupplierPanel() {
                     <p className="text-sm mb-2">Quantity: {req.quantity}</p>
                     <p className="text-sm mb-4">{req.description}</p>
                     
-                    {req.contactPhone && req.contactEmail && (
-                      <div className="flex flex-col space-y-1 mt-4 mb-4 p-3 bg-muted rounded-md">
+                    <div className="flex flex-col space-y-1 mt-4 mb-4 p-3 bg-muted rounded-md">
+                      <div className="flex justify-between items-center mb-2">
+                        <h4 className="text-sm font-medium">Farmer Contact Details</h4>
+                      </div>
+                      {req.contactPhone && (
                         <div className="flex items-center">
                           <Phone className="h-4 w-4 mr-2 text-muted-foreground" />
                           <p className="text-sm">{req.contactPhone}</p>
                         </div>
+                      )}
+                      {req.contactEmail && (
                         <div className="flex items-center">
                           <Mail className="h-4 w-4 mr-2 text-muted-foreground" />
                           <p className="text-sm">{req.contactEmail}</p>
                         </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
                     
                     {req.status === 'pending' && (
                       <div className="mt-4 p-3 bg-muted rounded-md space-y-3">
@@ -701,7 +808,7 @@ export function SupplierPanel() {
                         size="sm" 
                         onClick={() => handleDeleteRequest(req.id)}
                       >
-                        <Trash className="h-4 w-4 mr-2" />
+                        <Trash2 className="h-4 w-4 mr-2" />
                         Delete Request
                       </Button>
                     </div>
@@ -716,46 +823,6 @@ export function SupplierPanel() {
             </CardContent>
           </Card>
         )}
-      </TabsContent>
-      
-      <TabsContent value="analytics" className="space-y-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>Sales Performance</CardTitle>
-            <CardDescription>Profit and loss analysis of your products</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={analyticsData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Line type="monotone" dataKey="sales" stroke="#8884d8" name="Total Sales" />
-                  <Line type="monotone" dataKey="expenses" stroke="#82ca9d" name="Expenses" />
-                  <Line type="monotone" dataKey="profit" stroke="#ff7300" name="Profit" />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-            
-            <div className="grid grid-cols-3 gap-4 mt-6">
-              <div className="bg-muted rounded-md p-4 text-center">
-                <h3 className="text-sm font-medium mb-1">Total Products</h3>
-                <p className="text-2xl font-bold">{inventory.length}</p>
-              </div>
-              <div className="bg-muted rounded-md p-4 text-center">
-                <h3 className="text-sm font-medium mb-1">Active Requests</h3>
-                <p className="text-2xl font-bold">{requests.filter(r => r.status === 'pending').length}</p>
-              </div>
-              <div className="bg-muted rounded-md p-4 text-center">
-                <h3 className="text-sm font-medium mb-1">Completed Sales</h3>
-                <p className="text-2xl font-bold">{requests.filter(r => r.status === 'accepted').length}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </TabsContent>
     </Tabs>
   );

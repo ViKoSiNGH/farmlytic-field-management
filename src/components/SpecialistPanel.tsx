@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -5,11 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { FarmerRequest } from '@/types/auth';
-import { Lightbulb, MessageCircle, Phone, Mail, Calendar, FileText, BarChart, Trash2 } from 'lucide-react';
+import { Lightbulb, MessageCircle, Phone, Mail, Calendar, FileText, BarChart, Trash2, CheckCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { supabase } from '@/integrations/supabase/client';
 import { ResponsiveContainer, BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Button as ShadcnButton } from '@/components/ui/button';
 
 export function SpecialistPanel() {
   const { toast } = useToast();
@@ -190,6 +192,42 @@ export function SpecialistPanel() {
     }
   };
   
+  const handleMarkAsCompleted = async (requestId: string) => {
+    try {
+      // Mark the request as completed
+      const { error } = await supabase
+        .from('requests')
+        .update({
+          status: 'completed'
+        })
+        .eq('id', requestId);
+        
+      if (error) {
+        console.error('Error marking request as completed:', error);
+        toast({
+          title: "Error",
+          description: "Failed to mark request as completed. Please try again.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      toast({
+        title: "Success",
+        description: "Request marked as completed successfully."
+      });
+      
+      await fetchRequests();
+    } catch (error) {
+      console.error('Failed to mark request as completed:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+  
   const handleDeleteRequest = async (requestId: string) => {
     try {
       const { error } = await supabase
@@ -268,17 +306,22 @@ export function SpecialistPanel() {
     });
   };
   
+  const getStatusBadgeVariant = (status: string) => {
+    switch(status) {
+      case 'accepted': return 'default';
+      case 'rejected': return 'destructive';
+      case 'completed': return 'outline';
+      default: return 'secondary';
+    }
+  };
+  
   return (
     <div className="w-full space-y-6">
       <Tabs defaultValue="advice" className="w-full" value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid grid-cols-2 mb-4">
+        <TabsList className="grid grid-cols-1 mb-4">
           <TabsTrigger value="advice">
             <Lightbulb className="h-4 w-4 mr-2" />
             Advice Requests
-          </TabsTrigger>
-          <TabsTrigger value="analytics">
-            <BarChart className="h-4 w-4 mr-2" />
-            Analytics
           </TabsTrigger>
         </TabsList>
         
@@ -296,12 +339,9 @@ export function SpecialistPanel() {
                           Advice Request
                         </CardTitle>
                         <Badge
-                          variant={
-                            req.status === 'accepted' ? 'default' :
-                            req.status === 'rejected' ? 'destructive' : 'outline'
-                          }
+                          variant={getStatusBadgeVariant(req.status)}
                         >
-                          {req.status}
+                          {req.status === 'completed' ? 'Completed' : req.status}
                         </Badge>
                       </div>
                       <CardDescription>
@@ -362,7 +402,7 @@ export function SpecialistPanel() {
                         </div>
                       )}
                       
-                      {req.status !== 'pending' && (
+                      {req.status === 'accepted' && (
                         <div className="mt-4 border rounded-md">
                           <div className="bg-muted p-2 rounded-t-md border-b">
                             <h4 className="text-sm font-medium flex items-center">
@@ -400,16 +440,28 @@ export function SpecialistPanel() {
                               placeholder="Type a message..."
                               className="min-h-[60px] text-sm"
                             />
-                            <Button 
-                              size="sm" 
-                              className="self-end"
-                              onClick={() => {
-                                const textarea = document.getElementById(`chat-${req.id}`) as HTMLTextAreaElement;
-                                handleSendChatMessage(req.id, textarea.value);
-                              }}
-                            >
-                              Send
-                            </Button>
+                            <div className="flex flex-col gap-2">
+                              <Button 
+                                size="sm" 
+                                className="self-end"
+                                onClick={() => {
+                                  const textarea = document.getElementById(`chat-${req.id}`) as HTMLTextAreaElement;
+                                  handleSendChatMessage(req.id, textarea.value);
+                                }}
+                              >
+                                Send
+                              </Button>
+                              
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                className="self-end"
+                                onClick={() => handleMarkAsCompleted(req.id)}
+                              >
+                                <CheckCircle className="h-4 w-4 mr-1" />
+                                Mark Complete
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       )}
@@ -435,44 +487,6 @@ export function SpecialistPanel() {
               </CardContent>
             </Card>
           )}
-        </TabsContent>
-        
-        <TabsContent value="analytics">
-          <Card>
-            <CardHeader>
-              <CardTitle>Advice Performance</CardTitle>
-              <CardDescription>Number of questions answered by category</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <RechartsBarChart data={analyticsData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="category" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Bar dataKey="answered" fill="#8884d8" name="Questions Answered" />
-                  </RechartsBarChart>
-                </ResponsiveContainer>
-              </div>
-              
-              <div className="grid grid-cols-3 gap-4 mt-6">
-                <div className="bg-muted rounded-md p-4 text-center">
-                  <h3 className="text-sm font-medium mb-1">Total Requests</h3>
-                  <p className="text-2xl font-bold">{requests.length}</p>
-                </div>
-                <div className="bg-muted rounded-md p-4 text-center">
-                  <h3 className="text-sm font-medium mb-1">Pending</h3>
-                  <p className="text-2xl font-bold">{requests.filter(r => r.status === 'pending').length}</p>
-                </div>
-                <div className="bg-muted rounded-md p-4 text-center">
-                  <h3 className="text-sm font-medium mb-1">Questions Answered</h3>
-                  <p className="text-2xl font-bold">{requests.filter(r => r.status === 'accepted').length}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </TabsContent>
       </Tabs>
     </div>

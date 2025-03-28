@@ -1,8 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { FieldCard } from '@/components/FieldCard';
-import { MapPin, ArrowUpRight, Droplets, Sun, Wind, Plus, Lightbulb, ShoppingBag, Sprout } from 'lucide-react';
+import { MapPin, ArrowUpRight, Droplets, Plus, Lightbulb, ShoppingBag, Sprout, CalendarDays, Users, BarChart4 } from 'lucide-react';
 import { Field } from '@/types/auth';
 import { FieldForm } from '@/components/FieldForm';
 import { RolePanels } from '@/components/RolePanels';
@@ -24,6 +25,11 @@ export function Dashboard() {
   });
   const [crops, setCrops] = useState(0);
   const [products, setProducts] = useState(0);
+  const [weatherData, setWeatherData] = useState({
+    temp: '28°C',
+    condition: 'Sunny',
+    humidity: '65%'
+  });
   
   useEffect(() => {
     if (user?.role === 'farmer') {
@@ -209,6 +215,7 @@ export function Dashboard() {
               <div className="text-center py-3">
                 <p className="text-sm text-muted-foreground mb-1">Your Location</p>
                 <p className="font-medium">{location || 'Unknown'}</p>
+                <p className="mt-2 font-medium">{weatherData.temp} • {weatherData.condition}</p>
               </div>
               <Button 
                 variant="outline" 
@@ -287,9 +294,9 @@ export function Dashboard() {
                 variant="outline" 
                 size="sm" 
                 className="w-full mt-2"
-                onClick={() => navigate('/analytics')}
+                onClick={() => navigate('/supplier')}
               >
-                View Analytics
+                Manage Sales
               </Button>
             </CardContent>
           </Card>
@@ -337,9 +344,9 @@ export function Dashboard() {
                 variant="outline" 
                 size="sm" 
                 className="w-full mt-2"
-                onClick={() => navigate('/analytics')}
+                onClick={() => navigate('/specialist')}
               >
-                View Analytics
+                View Performance
               </Button>
             </CardContent>
           </Card>
@@ -370,7 +377,112 @@ export function Dashboard() {
       );
     }
     
-    return null;
+    // For non-authenticated users, show general information
+    return (
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          <Card className="hover-card-effect">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xl flex items-center">
+                <Sprout className="h-5 w-5 mr-2 text-green-500" />
+                For Farmers
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-4">
+                Manage your fields, crops, and get expert advice to improve your yield and sustainability.
+              </p>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full mt-2"
+                onClick={() => navigate('/register')}
+              >
+                Register as Farmer
+              </Button>
+            </CardContent>
+          </Card>
+          
+          <Card className="hover-card-effect">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xl flex items-center">
+                <ShoppingBag className="h-5 w-5 mr-2 text-indigo-500" />
+                For Suppliers
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-4">
+                List your agricultural products, reach farmers directly, and grow your business network.
+              </p>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full mt-2"
+                onClick={() => navigate('/register')}
+              >
+                Register as Supplier
+              </Button>
+            </CardContent>
+          </Card>
+          
+          <Card className="hover-card-effect">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xl flex items-center">
+                <Lightbulb className="h-5 w-5 mr-2 text-amber-500" />
+                For Specialists
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-4">
+                Share your agricultural expertise, help farmers solve problems, and build your reputation.
+              </p>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full mt-2"
+                onClick={() => navigate('/register')}
+              >
+                Register as Specialist
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Welcome to FarmLytic</CardTitle>
+            <CardDescription>Connect, Grow, and Thrive in Agriculture</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="flex flex-col items-center text-center">
+                <div className="bg-primary/10 p-3 rounded-full mb-3">
+                  <Users className="h-8 w-8 text-primary" />
+                </div>
+                <h3 className="font-medium mb-1">Connect</h3>
+                <p className="text-sm text-muted-foreground">Build a network of farmers, suppliers, and agricultural experts</p>
+              </div>
+              
+              <div className="flex flex-col items-center text-center">
+                <div className="bg-green-500/10 p-3 rounded-full mb-3">
+                  <Sprout className="h-8 w-8 text-green-500" />
+                </div>
+                <h3 className="font-medium mb-1">Grow</h3>
+                <p className="text-sm text-muted-foreground">Get expert advice and access to quality farming resources</p>
+              </div>
+              
+              <div className="flex flex-col items-center text-center">
+                <div className="bg-blue-500/10 p-3 rounded-full mb-3">
+                  <BarChart4 className="h-8 w-8 text-blue-500" />
+                </div>
+                <h3 className="font-medium mb-1">Thrive</h3>
+                <p className="text-sm text-muted-foreground">Improve yields, sustainability, and agricultural business outcomes</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
   };
   
   return (
@@ -378,9 +490,15 @@ export function Dashboard() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground">
-            Welcome back{user ? `, ${user.name}` : ''}
-          </p>
+          {isAuthenticated ? (
+            <p className="text-muted-foreground">
+              Welcome back{user ? `, ${user.name}` : ''}
+            </p>
+          ) : (
+            <p className="text-muted-foreground">
+              Your complete agricultural management platform
+            </p>
+          )}
         </div>
         {isAuthenticated && userRole === 'farmer' && (
           <Button onClick={() => setShowFieldForm(true)} disabled={showFieldForm}>
@@ -397,7 +515,7 @@ export function Dashboard() {
         />
       ) : (
         <>
-          {isAuthenticated && renderRoleSummary()}
+          {renderRoleSummary()}
           
           {!showFieldForm && fields.length > 0 && userRole === 'farmer' && (
             <div>

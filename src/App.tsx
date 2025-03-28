@@ -14,7 +14,6 @@ import NotFound from "./pages/NotFound";
 import Fields from "./pages/Fields";
 import Crops from "./pages/Crops";
 import Weather from "./pages/Weather";
-import Analytics from "./pages/Analytics";
 import Farmer from "./pages/Farmer";
 import Supplier from "./pages/Supplier";
 import Specialist from "./pages/Specialist";
@@ -114,13 +113,8 @@ const App = () => (
                 </ProtectedRoute>
               } />
               <Route path="/weather" element={
-                <ProtectedRoute>
+                <ProtectedRoute allowedRoles={['farmer']}>
                   <Weather />
-                </ProtectedRoute>
-              } />
-              <Route path="/analytics" element={
-                <ProtectedRoute>
-                  <Analytics />
                 </ProtectedRoute>
               } />
               <Route path="/farmer" element={
