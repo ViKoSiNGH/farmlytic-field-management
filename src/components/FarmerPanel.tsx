@@ -64,6 +64,20 @@ export function FarmerPanel() {
     }[];
   }[]>([]);
   
+  // Sample inventory items for dropdown selection
+  const availableItems = [
+    { name: "Organic Fertilizer", price: 850, unit: "kg" },
+    { name: "Tomato Seeds", price: 450, unit: "packet" },
+    { name: "Pesticide Spray", price: 1200, unit: "bottle" },
+    { name: "Wheat Seeds", price: 650, unit: "kg" },
+    { name: "Tractor Parts", price: 7500, unit: "set" },
+    { name: "Irrigation Equipment", price: 5500, unit: "set" },
+    { name: "Soil Enhancer", price: 1100, unit: "bag" },
+    { name: "Rice Seeds", price: 750, unit: "kg" },
+    { name: "Plant Protection Kit", price: 1800, unit: "kit" },
+    { name: "Farming Tools", price: 3500, unit: "set" }
+  ];
+  
   useEffect(() => {
     fetchRequests();
     fetchInventory();
@@ -394,15 +408,6 @@ export function FarmerPanel() {
       return;
     }
     
-    if (newRequest.type === 'advice' && !newRequest.targetId) {
-      toast({
-        title: "Missing Information",
-        description: "Please select a specialist for advice.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
     if (!newRequest.contactPhone || !newRequest.contactEmail) {
       toast({
         title: "Missing Contact Information",
@@ -413,6 +418,13 @@ export function FarmerPanel() {
     }
     
     try {
+      // For advice requests, don't require a specialist - assign to any specialist
+      let targetId = newRequest.targetId;
+      if (newRequest.type === 'advice' && !targetId && specialists.length > 0) {
+        // If no specific specialist is selected, assign to any available specialist
+        targetId = specialists[0].id;
+      }
+      
       // Create request in Supabase
       const { data, error } = await supabase
         .from('requests')
@@ -423,7 +435,7 @@ export function FarmerPanel() {
           quantity: newRequest.quantity,
           description: newRequest.description,
           status: 'pending',
-          target_id: newRequest.targetId,
+          target_id: targetId,
           contact_phone: newRequest.contactPhone,
           contact_email: newRequest.contactEmail,
           is_custom: newRequest.type === 'custom'
@@ -441,7 +453,7 @@ export function FarmerPanel() {
           description: newRequest.description,
           status: 'pending',
           createdAt: new Date(),
-          targetId: newRequest.targetId,
+          targetId: targetId,
           contactPhone: newRequest.contactPhone,
           contactEmail: newRequest.contactEmail,
           isCustom: newRequest.type === 'custom'
@@ -475,7 +487,7 @@ export function FarmerPanel() {
         title: "Request Submitted",
         description: newRequest.type === 'purchase' || newRequest.type === 'custom' 
           ? "Your purchase request has been sent to the supplier." 
-          : "Your advice request has been sent to the specialist."
+          : "Your advice request has been sent to a specialist."
       });
     } catch (error) {
       console.error('Failed to submit request:', error);
@@ -593,9 +605,14 @@ export function FarmerPanel() {
                   onChange={(e) => setNewRequest({...newRequest, item: e.target.value})}
                 >
                   <option value="">Select an item</option>
+                  {availableItems.map((item, index) => (
+                    <option key={index} value={item.name}>
+                      {item.name} - ₹{item.price} per {item.unit}
+                    </option>
+                  ))}
                   {inventory.map(item => (
                     <option key={item.id} value={item.name}>
-                      {item.name} - ${item.price} per {item.unit}
+                      {item.name} - ₹{item.price} per {item.unit}
                     </option>
                   ))}
                 </select>
@@ -616,8 +633,9 @@ export function FarmerPanel() {
               <Input
                 type="number"
                 min="1"
-                value={newRequest.quantity}
-                onChange={(e) => setNewRequest({...newRequest, quantity: parseInt(e.target.value) || 1})}
+                value={newRequest.quantity || ''}
+                placeholder="Enter quantity needed"
+                onChange={(e) => setNewRequest({...newRequest, quantity: parseInt(e.target.value) || undefined})}
               />
             </div>
             
@@ -672,7 +690,8 @@ export function FarmerPanel() {
                     <Badge
                       variant={
                         req.status === 'accepted' ? 'default' :
-                        req.status === 'rejected' ? 'destructive' : 'outline'
+                        req.status === 'rejected' ? 'destructive' : 
+                        req.status === 'completed' ? 'secondary' : 'outline'
                       }
                     >
                       {req.status}
@@ -778,27 +797,11 @@ export function FarmerPanel() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Select Specialist</label>
-              <select 
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2"
-                value={newRequest.targetId}
-                onChange={(e) => setNewRequest({...newRequest, type: 'advice', targetId: e.target.value})}
-              >
-                <option value="">Select a specialist</option>
-                {specialists.map(specialist => (
-                  <option key={specialist.id} value={specialist.id}>
-                    {specialist.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            
-            <div className="space-y-2">
               <label className="text-sm font-medium">Describe Your Issue</label>
               <Textarea
                 placeholder="Explain the problem you're facing or the advice you need..."
                 value={newRequest.description}
-                onChange={(e) => setNewRequest({...newRequest, description: e.target.value})}
+                onChange={(e) => setNewRequest({...newRequest, type: 'advice', description: e.target.value})}
               />
             </div>
             
@@ -844,7 +847,8 @@ export function FarmerPanel() {
                     <Badge
                       variant={
                         req.status === 'accepted' ? 'default' :
-                        req.status === 'rejected' ? 'destructive' : 'outline'
+                        req.status === 'rejected' ? 'destructive' : 
+                        req.status === 'completed' ? 'secondary' : 'outline'
                       }
                     >
                       {req.status}
@@ -963,18 +967,20 @@ export function FarmerPanel() {
                 <Input
                   type="number"
                   min="1"
-                  value={newProduct.quantity}
+                  placeholder="Enter quantity"
+                  value={newProduct.quantity || ''}
                   onChange={(e) => setNewProduct({...newProduct, quantity: parseInt(e.target.value) || 1})}
                 />
               </div>
               
               <div className="space-y-2">
-                <label className="text-sm font-medium">Price ($)</label>
+                <label className="text-sm font-medium">Price (₹)</label>
                 <Input
                   type="number"
                   min="0.01"
                   step="0.01"
-                  value={newProduct.price}
+                  placeholder="Enter price in INR"
+                  value={newProduct.price || ''}
                   onChange={(e) => setNewProduct({...newProduct, price: parseFloat(e.target.value) || 0})}
                 />
               </div>
@@ -1006,7 +1012,7 @@ export function FarmerPanel() {
                   <div className="flex justify-between items-center">
                     <CardTitle className="text-lg">{product.name}</CardTitle>
                     <Badge variant="outline">
-                      ${product.price.toFixed(2)}
+                      ₹{product.price.toFixed(2)}
                     </Badge>
                   </div>
                 </CardHeader>

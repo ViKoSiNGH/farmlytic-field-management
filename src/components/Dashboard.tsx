@@ -1,9 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { FieldCard } from '@/components/FieldCard';
-import { MapPin, ArrowUpRight, Droplets, Plus, Lightbulb, ShoppingBag, Sprout, CalendarDays, Users, BarChart4 } from 'lucide-react';
+import { 
+  MapPin, ArrowUpRight, Droplets, Plus, Lightbulb, ShoppingBag, 
+  Sprout, CalendarDays, Users, BarChart4, Tractor, 
+  PlaneTakeoff, LineChart, Hand, Leaf, SunMedium
+} from 'lucide-react';
 import { Field } from '@/types/auth';
 import { FieldForm } from '@/components/FieldForm';
 import { RolePanels } from '@/components/RolePanels';
@@ -154,241 +158,446 @@ export function Dashboard() {
   
   const userRole = getRole() || 'farmer';
   
-  const renderRoleSummary = () => {
-    if (userRole === 'farmer') {
-      return (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          <Card className="hover-card-effect">
+  const renderDashboardHeader = () => {
+    return (
+      <div className="bg-gradient-to-r from-green-100 to-blue-100 dark:from-green-900/20 dark:to-blue-900/20 rounded-lg p-6 mb-8">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-3xl font-bold mb-4">FarmLytic: Connecting Agriculture</h2>
+          <p className="text-lg text-muted-foreground mb-6">
+            A comprehensive platform that connects farmers, suppliers, and agricultural specialists
+            for sustainable farming practices, knowledge sharing, and improved agricultural outcomes.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
+            <div className="flex flex-col items-center p-4 rounded-lg bg-white/50 dark:bg-slate-800/50 shadow-sm hover:shadow-md transition-all">
+              <Sprout className="h-10 w-10 text-green-500 mb-2" />
+              <h3 className="font-medium">Farming Solutions</h3>
+              <p className="text-sm text-muted-foreground">Manage fields, crops, and get expert advice</p>
+            </div>
+            <div className="flex flex-col items-center p-4 rounded-lg bg-white/50 dark:bg-slate-800/50 shadow-sm hover:shadow-md transition-all">
+              <ShoppingBag className="h-10 w-10 text-indigo-500 mb-2" />
+              <h3 className="font-medium">Supply Chain</h3>
+              <p className="text-sm text-muted-foreground">Connect with trusted suppliers for agricultural needs</p>
+            </div>
+            <div className="flex flex-col items-center p-4 rounded-lg bg-white/50 dark:bg-slate-800/50 shadow-sm hover:shadow-md transition-all">
+              <Lightbulb className="h-10 w-10 text-amber-500 mb-2" />
+              <h3 className="font-medium">Expert Advice</h3>
+              <p className="text-sm text-muted-foreground">Direct access to agricultural specialists</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+  
+  const renderFarmerInsights = () => {
+    return (
+      <div className="mb-8">
+        <h2 className="text-2xl font-semibold mb-4">Farm Insights</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card className="hover:shadow-md transition-all">
             <CardHeader className="pb-2">
               <CardTitle className="text-xl flex items-center">
-                <Sprout className="h-5 w-5 mr-2 text-green-500" />
-                Crops Overview
+                <Tractor className="h-5 w-5 mr-2 text-green-600" />
+                Field Management
               </CardTitle>
+              <CardDescription>Track your farm fields efficiently</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="text-center py-3">
-                <p className="text-3xl font-bold">{crops}</p>
-                <p className="text-sm text-muted-foreground">Active Crops</p>
+            <CardContent className="pt-4">
+              <div className="aspect-video relative mb-4 bg-slate-100 dark:bg-slate-800 rounded-md overflow-hidden">
+                <img 
+                  src="https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8MzJ8fGZhcm18ZW58MHx8MHx8" 
+                  alt="Farm field"
+                  className="w-full h-full object-cover"
+                />
               </div>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="w-full mt-2"
-                onClick={() => navigate('/crops')}
-              >
-                Manage Crops
-              </Button>
+              <p className="text-sm text-muted-foreground">
+                Register and monitor your fields with detailed information on crops, soil types, and conditions.
+              </p>
             </CardContent>
-          </Card>
-          
-          <Card className="hover-card-effect">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xl flex items-center">
-                <MapPin className="h-5 w-5 mr-2 text-blue-500" />
-                Fields Overview
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-3">
-                <p className="text-3xl font-bold">{fields.length}</p>
-                <p className="text-sm text-muted-foreground">Registered Fields</p>
-              </div>
+            <CardFooter>
               <Button 
                 variant="outline" 
-                size="sm" 
-                className="w-full mt-2"
+                className="w-full"
                 onClick={() => navigate('/fields')}
               >
                 Manage Fields
               </Button>
-            </CardContent>
+            </CardFooter>
           </Card>
           
-          <Card className="hover-card-effect">
+          <Card className="hover:shadow-md transition-all">
             <CardHeader className="pb-2">
               <CardTitle className="text-xl flex items-center">
-                <Droplets className="h-5 w-5 mr-2 text-blue-400" />
-                Current Conditions
+                <Leaf className="h-5 w-5 mr-2 text-green-500" />
+                Crop Monitoring
               </CardTitle>
+              <CardDescription>Keep track of your growing crops</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="text-center py-3">
-                <p className="text-sm text-muted-foreground mb-1">Your Location</p>
-                <p className="font-medium">{location || 'Unknown'}</p>
-                <p className="mt-2 font-medium">{weatherData.temp} • {weatherData.condition}</p>
+            <CardContent className="pt-4">
+              <div className="aspect-video relative mb-4 bg-slate-100 dark:bg-slate-800 rounded-md overflow-hidden">
+                <img 
+                  src="https://images.unsplash.com/photo-1586771107445-d3ca888129ce?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8OHx8Y3JvcHN8ZW58MHx8MHx8" 
+                  alt="Crops growing"
+                  className="w-full h-full object-cover"
+                />
               </div>
+              <p className="text-sm text-muted-foreground">
+                Monitor planting dates, expected harvest times, and health status of all your crops.
+              </p>
+            </CardContent>
+            <CardFooter>
               <Button 
                 variant="outline" 
-                size="sm" 
-                className="w-full mt-2"
+                className="w-full"
+                onClick={() => navigate('/crops')}
+              >
+                Manage Crops
+              </Button>
+            </CardFooter>
+          </Card>
+          
+          <Card className="hover:shadow-md transition-all">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xl flex items-center">
+                <SunMedium className="h-5 w-5 mr-2 text-amber-500" />
+                Weather Reports
+              </CardTitle>
+              <CardDescription>Local weather and forecasts</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-4">
+              <div className="aspect-video relative mb-4 bg-slate-100 dark:bg-slate-800 rounded-md overflow-hidden">
+                <img 
+                  src="https://images.unsplash.com/photo-1516912481808-3406841bd33c?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8M3x8d2VhdGhlcnxlbnwwfHwwfHw%3D" 
+                  alt="Weather"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Access real-time weather data and forecasts to plan your farming activities effectively.
+              </p>
+            </CardContent>
+            <CardFooter>
+              <Button 
+                variant="outline" 
+                className="w-full"
                 onClick={() => navigate('/weather')}
               >
                 View Weather
               </Button>
-            </CardContent>
+            </CardFooter>
           </Card>
+        </div>
+      </div>
+    );
+  };
+  
+  const renderRoleSummary = () => {
+    if (userRole === 'farmer') {
+      return (
+        <div className="space-y-8">
+          {renderDashboardHeader()}
+          {renderFarmerInsights()}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <Card className="hover-card-effect">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-xl flex items-center">
+                  <Sprout className="h-5 w-5 mr-2 text-green-500" />
+                  Crops Overview
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-3">
+                  <p className="text-3xl font-bold">{crops}</p>
+                  <p className="text-sm text-muted-foreground">Active Crops</p>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full mt-2"
+                  onClick={() => navigate('/crops')}
+                >
+                  Manage Crops
+                </Button>
+              </CardContent>
+            </Card>
+            
+            <Card className="hover-card-effect">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-xl flex items-center">
+                  <MapPin className="h-5 w-5 mr-2 text-blue-500" />
+                  Fields Overview
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-3">
+                  <p className="text-3xl font-bold">{fields.length}</p>
+                  <p className="text-sm text-muted-foreground">Registered Fields</p>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full mt-2"
+                  onClick={() => navigate('/fields')}
+                >
+                  Manage Fields
+                </Button>
+              </CardContent>
+            </Card>
+            
+            <Card className="hover-card-effect">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-xl flex items-center">
+                  <Droplets className="h-5 w-5 mr-2 text-blue-400" />
+                  Current Conditions
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-3">
+                  <p className="text-sm text-muted-foreground mb-1">Your Location</p>
+                  <p className="font-medium">{location || 'Unknown'}</p>
+                  <p className="mt-2 font-medium">{weatherData.temp} • {weatherData.condition}</p>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full mt-2"
+                  onClick={() => navigate('/weather')}
+                >
+                  View Weather
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       );
     } else if (userRole === 'supplier') {
       return (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          <Card className="hover-card-effect">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xl flex items-center">
-                <ShoppingBag className="h-5 w-5 mr-2 text-indigo-500" />
-                Inventory Overview
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-3">
-                <p className="text-3xl font-bold">{products}</p>
-                <p className="text-sm text-muted-foreground">Products Listed</p>
-              </div>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="w-full mt-2"
-                onClick={() => navigate('/supplier')}
-              >
-                Manage Inventory
-              </Button>
-            </CardContent>
-          </Card>
-          
-          <Card className="hover-card-effect">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xl flex items-center">
-                <ShoppingBag className="h-5 w-5 mr-2 text-orange-500" />
-                Purchase Requests
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-3">
-                <p className="text-3xl font-bold">{requests.pending}</p>
-                <p className="text-sm text-muted-foreground">Pending Requests</p>
-              </div>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="w-full mt-2"
-                onClick={() => navigate('/supplier')}
-              >
-                View Requests
-              </Button>
-            </CardContent>
-          </Card>
-          
-          <Card className="hover-card-effect">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xl flex items-center">
-                <ArrowUpRight className="h-5 w-5 mr-2 text-green-500" />
-                Sales Performance
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-3">
-                <p className="text-3xl font-bold">{requests.accepted}</p>
-                <p className="text-sm text-muted-foreground">Completed Sales</p>
-              </div>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="w-full mt-2"
-                onClick={() => navigate('/supplier')}
-              >
-                Manage Sales
-              </Button>
-            </CardContent>
-          </Card>
+        <div className="space-y-8">
+          {renderDashboardHeader()}
+          <div className="mb-8">
+            <h2 className="text-2xl font-semibold mb-4">Supplier Dashboard</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <Card className="hover:shadow-md transition-all">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-xl flex items-center">
+                    <ShoppingBag className="h-5 w-5 mr-2 text-indigo-500" />
+                    Inventory Management
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-4">
+                  <div className="aspect-video relative mb-4 bg-slate-100 dark:bg-slate-800 rounded-md overflow-hidden">
+                    <img 
+                      src="https://images.unsplash.com/photo-1416339684178-3a239570f315?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8MTZ8fHdhcmVob3VzZXxlbnwwfHwwfHw%3D" 
+                      alt="Inventory"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    List, manage, and track your agricultural products and supplies for farmers.
+                  </p>
+                </CardContent>
+                <CardFooter>
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={() => navigate('/supplier')}
+                  >
+                    Manage Inventory
+                  </Button>
+                </CardFooter>
+              </Card>
+              
+              <Card className="hover:shadow-md transition-all">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-xl flex items-center">
+                    <ShoppingBag className="h-5 w-5 mr-2 text-orange-500" />
+                    Purchase Requests
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-4">
+                  <div className="aspect-video relative mb-4 bg-slate-100 dark:bg-slate-800 rounded-md overflow-hidden">
+                    <img 
+                      src="https://images.unsplash.com/photo-1556742031-c6961e8560b0?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8OXx8dHJhbnNhY3Rpb258ZW58MHx8MHx8" 
+                      alt="Purchases"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="text-center py-3">
+                    <p className="text-3xl font-bold">{requests.pending}</p>
+                    <p className="text-sm text-muted-foreground">Pending Requests</p>
+                  </div>
+                </CardContent>
+                <CardFooter>
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={() => navigate('/supplier')}
+                  >
+                    View Requests
+                  </Button>
+                </CardFooter>
+              </Card>
+              
+              <Card className="hover:shadow-md transition-all">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-xl flex items-center">
+                    <ArrowUpRight className="h-5 w-5 mr-2 text-green-500" />
+                    Sales Performance
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-4">
+                  <div className="aspect-video relative mb-4 bg-slate-100 dark:bg-slate-800 rounded-md overflow-hidden">
+                    <img 
+                      src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8M3x8YnVzaW5lc3MlMjBjaGFydHxlbnwwfHwwfHw%3D" 
+                      alt="Performance"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="text-center py-3">
+                    <p className="text-3xl font-bold">{requests.accepted}</p>
+                    <p className="text-sm text-muted-foreground">Completed Sales</p>
+                  </div>
+                </CardContent>
+                <CardFooter>
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={() => navigate('/supplier')}
+                  >
+                    Manage Sales
+                  </Button>
+                </CardFooter>
+              </Card>
+            </div>
+          </div>
         </div>
       );
     } else if (userRole === 'specialist') {
       return (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          <Card className="hover-card-effect">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xl flex items-center">
-                <Lightbulb className="h-5 w-5 mr-2 text-amber-500" />
-                Advice Requests
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-3">
-                <p className="text-3xl font-bold">{requests.pending}</p>
-                <p className="text-sm text-muted-foreground">Pending Requests</p>
-              </div>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="w-full mt-2"
-                onClick={() => navigate('/specialist')}
-              >
-                View Requests
-              </Button>
-            </CardContent>
-          </Card>
-          
-          <Card className="hover-card-effect">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xl flex items-center">
-                <ArrowUpRight className="h-5 w-5 mr-2 text-green-500" />
-                Advice Performance
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-3">
-                <p className="text-3xl font-bold">{requests.accepted}</p>
-                <p className="text-sm text-muted-foreground">Questions Answered</p>
-              </div>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="w-full mt-2"
-                onClick={() => navigate('/specialist')}
-              >
-                View Performance
-              </Button>
-            </CardContent>
-          </Card>
-          
-          <Card className="hover-card-effect">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xl flex items-center">
-                <MapPin className="h-5 w-5 mr-2 text-blue-500" />
-                Your Location
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-3">
-                <p className="font-medium">{location || 'Unknown'}</p>
-                <p className="text-sm text-muted-foreground mt-1">Current Position</p>
-              </div>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="w-full mt-2"
-                onClick={() => navigate('/specialist')}
-              >
-                Specialist Tools
-              </Button>
-            </CardContent>
-          </Card>
+        <div className="space-y-8">
+          {renderDashboardHeader()}
+          <div className="mb-8">
+            <h2 className="text-2xl font-semibold mb-4">Specialist Dashboard</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <Card className="hover:shadow-md transition-all">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-xl flex items-center">
+                    <Lightbulb className="h-5 w-5 mr-2 text-amber-500" />
+                    Advice Requests
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-4">
+                  <div className="aspect-video relative mb-4 bg-slate-100 dark:bg-slate-800 rounded-md overflow-hidden">
+                    <img 
+                      src="https://images.unsplash.com/photo-1579389083078-4e7018379f7e?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8Mnx8YWR2aWNlfGVufDB8fDB8fA%3D%3D" 
+                      alt="Advice"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="text-center py-3">
+                    <p className="text-3xl font-bold">{requests.pending}</p>
+                    <p className="text-sm text-muted-foreground">Pending Requests</p>
+                  </div>
+                </CardContent>
+                <CardFooter>
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={() => navigate('/specialist')}
+                  >
+                    View Requests
+                  </Button>
+                </CardFooter>
+              </Card>
+              
+              <Card className="hover:shadow-md transition-all">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-xl flex items-center">
+                    <ArrowUpRight className="h-5 w-5 mr-2 text-green-500" />
+                    Advice Performance
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-4">
+                  <div className="aspect-video relative mb-4 bg-slate-100 dark:bg-slate-800 rounded-md overflow-hidden">
+                    <img 
+                      src="https://images.unsplash.com/photo-1581291518633-83b4ebd1d83e?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8MTZ8fGhlbHBpbmd8ZW58MHx8MHx8" 
+                      alt="Performance"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="text-center py-3">
+                    <p className="text-3xl font-bold">{requests.accepted}</p>
+                    <p className="text-sm text-muted-foreground">Questions Answered</p>
+                  </div>
+                </CardContent>
+                <CardFooter>
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={() => navigate('/specialist')}
+                  >
+                    View Performance
+                  </Button>
+                </CardFooter>
+              </Card>
+              
+              <Card className="hover:shadow-md transition-all">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-xl flex items-center">
+                    <MapPin className="h-5 w-5 mr-2 text-blue-500" />
+                    Your Location
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-4">
+                  <div className="aspect-video relative mb-4 bg-slate-100 dark:bg-slate-800 rounded-md overflow-hidden">
+                    <img 
+                      src="https://images.unsplash.com/photo-1569336415962-a4bd9f69cd83?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8NHx8bWFwfGVufDB8fDB8fA%3D%3D" 
+                      alt="Location"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="text-center py-3">
+                    <p className="font-medium">{location || 'Unknown'}</p>
+                    <p className="text-sm text-muted-foreground mt-1">Current Position</p>
+                  </div>
+                </CardContent>
+                <CardFooter>
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={() => navigate('/specialist')}
+                  >
+                    Specialist Tools
+                  </Button>
+                </CardFooter>
+              </Card>
+            </div>
+          </div>
         </div>
       );
     }
     
-    // For non-authenticated users, show general information
+    // For non-authenticated users, show general information with improved visuals
     return (
-      <div className="space-y-6">
+      <div className="space-y-8">
+        {renderDashboardHeader()}
+        
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          <Card className="hover-card-effect">
+          <Card className="hover:shadow-lg transition-all">
             <CardHeader className="pb-2">
               <CardTitle className="text-xl flex items-center">
                 <Sprout className="h-5 w-5 mr-2 text-green-500" />
                 For Farmers
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-4">
+              <div className="aspect-video relative mb-4 bg-slate-100 dark:bg-slate-800 rounded-md overflow-hidden">
+                <img 
+                  src="https://images.unsplash.com/photo-1464226184884-fa280b87c399?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8M3x8ZmFybWVyfGVufDB8fDB8fA%3D%3D" 
+                  alt="Farmer"
+                  className="w-full h-full object-cover"
+                />
+              </div>
               <p className="text-sm text-muted-foreground mb-4">
                 Manage your fields, crops, and get expert advice to improve your yield and sustainability.
               </p>
@@ -403,14 +612,21 @@ export function Dashboard() {
             </CardContent>
           </Card>
           
-          <Card className="hover-card-effect">
+          <Card className="hover:shadow-lg transition-all">
             <CardHeader className="pb-2">
               <CardTitle className="text-xl flex items-center">
                 <ShoppingBag className="h-5 w-5 mr-2 text-indigo-500" />
                 For Suppliers
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-4">
+              <div className="aspect-video relative mb-4 bg-slate-100 dark:bg-slate-800 rounded-md overflow-hidden">
+                <img 
+                  src="https://images.unsplash.com/photo-1541560052-5e137f5b6f7b?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8OXx8c3VwcGxpZXJ8ZW58MHx8MHx8" 
+                  alt="Supplier"
+                  className="w-full h-full object-cover"
+                />
+              </div>
               <p className="text-sm text-muted-foreground mb-4">
                 List your agricultural products, reach farmers directly, and grow your business network.
               </p>
@@ -425,14 +641,21 @@ export function Dashboard() {
             </CardContent>
           </Card>
           
-          <Card className="hover-card-effect">
+          <Card className="hover:shadow-lg transition-all">
             <CardHeader className="pb-2">
               <CardTitle className="text-xl flex items-center">
                 <Lightbulb className="h-5 w-5 mr-2 text-amber-500" />
                 For Specialists
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-4">
+              <div className="aspect-video relative mb-4 bg-slate-100 dark:bg-slate-800 rounded-md overflow-hidden">
+                <img 
+                  src="https://images.unsplash.com/photo-1557804506-669a67965ba0?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8NHx8YWdyaWN1bHR1cmFsJTIwZXhwZXJ0fGVufDB8fDB8fA%3D%3D" 
+                  alt="Specialist"
+                  className="w-full h-full object-cover"
+                />
+              </div>
               <p className="text-sm text-muted-foreground mb-4">
                 Share your agricultural expertise, help farmers solve problems, and build your reputation.
               </p>
