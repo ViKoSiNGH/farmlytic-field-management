@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/hooks/use-auth';
@@ -100,7 +99,7 @@ export function Dashboard() {
               <CardContent>
                 <div className="text-2xl font-bold">{stats.crops}</div>
                 <p className="text-xs text-muted-foreground">
-                  {stats.crops > 0 ? 'Actively monitoring crops' : 'Add crops to start monitoring'}
+                  {stats.crops > 0 ? 'Actively monitoring crops' : 'Add crops to get started'}
                 </p>
               </CardContent>
             </Card>
@@ -113,7 +112,7 @@ export function Dashboard() {
               <CardContent>
                 <div className="text-2xl font-bold">{stats.fields}</div>
                 <p className="text-xs text-muted-foreground">
-                  {stats.fields > 0 ? 'Registered fields' : 'Register fields to manage crops'}
+                  {stats.fields > 0 ? 'Registered fields' : 'Register fields to get started'}
                 </p>
               </CardContent>
             </Card>
@@ -180,12 +179,9 @@ export function Dashboard() {
               <CardContent className="space-y-4">
                 <div className="rounded-md overflow-hidden">
                   <img 
-                    src="/placeholder.svg" 
+                    src="https://images.unsplash.com/photo-1472396961693-142e6e269027?auto=format&fit=crop&w=800&h=400" 
                     alt="Agricultural management" 
                     className="w-full h-48 object-cover"
-                    onError={(e) => {
-                      e.currentTarget.src = "https://images.unsplash.com/photo-1472396961693-142e6e269027?auto=format&fit=crop&w=800&h=400";
-                    }}
                   />
                 </div>
                 <div className="space-y-2">
@@ -196,6 +192,8 @@ export function Dashboard() {
                     <li>Connect with suppliers for agricultural inputs</li>
                     <li>Get expert advice from agricultural specialists</li>
                     <li>Sell your agricultural products to a wider market</li>
+                    <li>Maximize yield through data-driven decisions</li>
+                    <li>Reduce waste through efficient resource management</li>
                   </ul>
                 </div>
               </CardContent>
@@ -257,6 +255,62 @@ export function Dashboard() {
                   View All Fields
                 </Button>
               </CardFooter>
+            </Card>
+          </div>
+          
+          <div className="grid gap-4 md:grid-cols-3">
+            <Card className="hover:shadow-md transition-all transform hover:-translate-y-1">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg">Resource Optimization</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="rounded-md overflow-hidden mb-4">
+                  <img 
+                    src="https://images.unsplash.com/photo-1557234195-6f5f8613939c?auto=format&fit=crop&w=800&h=400" 
+                    alt="Resource optimization" 
+                    className="w-full h-36 object-cover" 
+                  />
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Optimize water, fertilizer, and other inputs based on field conditions and crop requirements.
+                </p>
+              </CardContent>
+            </Card>
+            
+            <Card className="hover:shadow-md transition-all transform hover:-translate-y-1">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg">Market Insights</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="rounded-md overflow-hidden mb-4">
+                  <img 
+                    src="https://images.unsplash.com/photo-1604719312566-8912e9c8ba48?auto=format&fit=crop&w=800&h=400" 
+                    alt="Market insights" 
+                    className="w-full h-36 object-cover" 
+                  />
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Stay updated with current market trends and price forecasts for your agricultural products.
+                </p>
+              </CardContent>
+            </Card>
+            
+            <Card className="hover:shadow-md transition-all transform hover:-translate-y-1">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg">Weather Forecasts</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="rounded-md overflow-hidden mb-4">
+                  <img 
+                    src="https://images.unsplash.com/photo-1592210454359-9043f067919b?auto=format&fit=crop&w=800&h=400" 
+                    alt="Weather forecasts" 
+                    className="w-full h-36 object-cover" 
+                  />
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Access 10-day weather forecasts specific to your field locations to plan activities accordingly.
+                </p>
+              </CardContent>
             </Card>
           </div>
         </TabsContent>

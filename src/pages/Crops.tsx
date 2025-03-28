@@ -1,7 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useForm } from 'react-hook-form';
@@ -322,6 +323,9 @@ export default function Crops() {
             <DialogContent className="sm:max-w-[500px] max-h-[90vh]">
               <DialogHeader>
                 <DialogTitle>Add New Crop</DialogTitle>
+                <DialogDescription>
+                  Fill in the details to add a new crop to your farm
+                </DialogDescription>
               </DialogHeader>
               
               <ScrollArea className="max-h-[70vh] overflow-y-auto pr-4">
@@ -411,7 +415,13 @@ export default function Crops() {
                           <FormItem>
                             <FormLabel>Planting Date</FormLabel>
                             <FormControl>
-                              <Input type="date" {...field} required />
+                              <Input 
+                                placeholder="YYYY-MM-DD" 
+                                {...field} 
+                                required 
+                                onFocus={(e) => e.target.type = 'date'} 
+                                onBlur={(e) => e.target.type = 'text'} 
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -425,7 +435,13 @@ export default function Crops() {
                           <FormItem>
                             <FormLabel>Estimated Harvest</FormLabel>
                             <FormControl>
-                              <Input type="date" {...field} required />
+                              <Input 
+                                placeholder="YYYY-MM-DD" 
+                                {...field} 
+                                required 
+                                onFocus={(e) => e.target.type = 'date'} 
+                                onBlur={(e) => e.target.type = 'text'} 
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -458,7 +474,13 @@ export default function Crops() {
                             <FormItem>
                               <FormLabel>Due Date</FormLabel>
                               <FormControl>
-                                <Input type="date" {...field} required />
+                                <Input 
+                                  placeholder="YYYY-MM-DD" 
+                                  {...field} 
+                                  required 
+                                  onFocus={(e) => e.target.type = 'date'} 
+                                  onBlur={(e) => e.target.type = 'text'} 
+                                />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -488,7 +510,12 @@ export default function Crops() {
                             <FormItem>
                               <FormLabel>Due Date</FormLabel>
                               <FormControl>
-                                <Input type="date" {...field} />
+                                <Input 
+                                  placeholder="YYYY-MM-DD" 
+                                  {...field} 
+                                  onFocus={(e) => e.target.type = 'date'} 
+                                  onBlur={(e) => e.target.type = 'text'} 
+                                />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -655,7 +682,13 @@ export default function Crops() {
                   <FormItem>
                     <FormLabel>Due Date</FormLabel>
                     <FormControl>
-                      <Input placeholder="May 15" {...field} required />
+                      <Input 
+                        placeholder="YYYY-MM-DD" 
+                        {...field} 
+                        required 
+                        onFocus={(e) => e.target.type = 'date'} 
+                        onBlur={(e) => e.target.type = 'text'} 
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
