@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
@@ -13,6 +12,7 @@ import { SeedlingIcon } from '@/components/GardenIcon';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
 import { Textarea } from '@/components/ui/textarea';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface Crop {
   id: string;
@@ -88,7 +88,6 @@ export default function Crops() {
     if (!user) return;
 
     try {
-      // First try to fetch from Supabase
       const { data, error } = await supabase
         .from('crops')
         .select('*')
@@ -96,7 +95,6 @@ export default function Crops() {
 
       if (error) {
         console.error('Error fetching crops from Supabase:', error);
-        // Fall back to local storage
         const savedCrops = localStorage.getItem('farmlytic_crops');
         if (savedCrops) {
           try {
@@ -109,7 +107,6 @@ export default function Crops() {
           setCrops(getSampleCrops());
         }
       } else if (data && data.length > 0) {
-        // Convert Supabase data to our Crop interface
         const fetchedCrops: Crop[] = data.map(cropData => ({
           id: cropData.id,
           name: cropData.name,
@@ -122,7 +119,6 @@ export default function Crops() {
         }));
         setCrops(fetchedCrops);
       } else {
-        // No crops in Supabase, use sample data
         setCrops(getSampleCrops());
       }
     } catch (error) {
@@ -202,7 +198,6 @@ export default function Crops() {
     };
 
     try {
-      // First, save to Supabase
       const { data: supabaseData, error } = await supabase
         .from('crops')
         .insert([{
@@ -217,20 +212,15 @@ export default function Crops() {
 
       if (error) {
         console.error('Error saving crop to Supabase:', error);
-        // If Supabase fails, just update local state
       } else if (supabaseData && supabaseData.length > 0) {
-        // Update the ID with the one from Supabase
         newCrop.id = supabaseData[0].id;
       }
     } catch (error) {
       console.error('Failed to save crop to Supabase:', error);
     }
     
-    // Update local state regardless of Supabase result
     const updatedCrops = [...crops, newCrop];
     setCrops(updatedCrops);
-    
-    // Also save to local storage as backup
     localStorage.setItem('farmlytic_crops', JSON.stringify(updatedCrops));
     
     setIsDialogOpen(false);
@@ -268,7 +258,6 @@ export default function Crops() {
     
     if (user) {
       try {
-        // Remove from Supabase
         const { error } = await supabase
           .from('crops')
           .delete()
@@ -282,7 +271,6 @@ export default function Crops() {
       }
     }
     
-    // Update local state and storage
     setCrops(updatedCrops);
     localStorage.setItem('farmlytic_crops', JSON.stringify(updatedCrops));
     
@@ -331,131 +319,43 @@ export default function Crops() {
                 Add New Crop
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px]">
+            <DialogContent className="sm:max-w-[500px] max-h-[90vh]">
               <DialogHeader>
                 <DialogTitle>Add New Crop</DialogTitle>
               </DialogHeader>
               
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
-                  <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Crop Name</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Wheat" {...field} required />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <div className="grid grid-cols-2 gap-4">
+              <ScrollArea className="max-h-[70vh] overflow-y-auto pr-4">
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
                     <FormField
                       control={form.control}
-                      name="activeFields"
+                      name="name"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Active Fields</FormLabel>
+                          <FormLabel>Crop Name</FormLabel>
                           <FormControl>
-                            <Input 
-                              type="number" 
-                              placeholder="1" 
-                              {...field} 
-                              onChange={e => field.onChange(parseInt(e.target.value) || 1)} 
-                              required 
-                            />
+                            <Input placeholder="Wheat" {...field} required />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
-                    
-                    <FormField
-                      control={form.control}
-                      name="totalHectares"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Total Hectares</FormLabel>
-                          <FormControl>
-                            <Input 
-                              type="number" 
-                              placeholder="10.5" 
-                              {...field} 
-                              onChange={e => field.onChange(parseFloat(e.target.value) || 0)} 
-                              required 
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  
-                  <FormField
-                    control={form.control}
-                    name="growthProgress"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Growth Progress (%)</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="number" 
-                            placeholder="50" 
-                            {...field} 
-                            onChange={e => field.onChange(parseInt(e.target.value) || 0)} 
-                            required 
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="plantingDate"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Planting Date</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Apr 15, 2023" {...field} required />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="estimatedHarvest"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Estimated Harvest</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Aug 20, 2023" {...field} required />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  
-                  <div className="space-y-4">
-                    <h3 className="font-medium">Initial Tasks</h3>
                     
                     <div className="grid grid-cols-2 gap-4">
                       <FormField
                         control={form.control}
-                        name="task1"
+                        name="activeFields"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Task 1</FormLabel>
+                            <FormLabel>Active Fields</FormLabel>
                             <FormControl>
-                              <Input placeholder="Apply fertilizer" {...field} required />
+                              <Input 
+                                type="number" 
+                                placeholder="1" 
+                                {...field} 
+                                onChange={e => field.onChange(parseInt(e.target.value) || 1)} 
+                                required 
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -464,12 +364,18 @@ export default function Crops() {
                       
                       <FormField
                         control={form.control}
-                        name="task1DueDate"
+                        name="totalHectares"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Due Date</FormLabel>
+                            <FormLabel>Total Hectares</FormLabel>
                             <FormControl>
-                              <Input placeholder="May 15" {...field} required />
+                              <Input 
+                                type="number" 
+                                placeholder="10.5" 
+                                {...field} 
+                                onChange={e => field.onChange(parseFloat(e.target.value) || 0)} 
+                                required 
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -477,15 +383,35 @@ export default function Crops() {
                       />
                     </div>
                     
+                    <FormField
+                      control={form.control}
+                      name="growthProgress"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Growth Progress (%)</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number" 
+                              placeholder="50" 
+                              {...field} 
+                              onChange={e => field.onChange(parseInt(e.target.value) || 0)} 
+                              required 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
                     <div className="grid grid-cols-2 gap-4">
                       <FormField
                         control={form.control}
-                        name="task2"
+                        name="plantingDate"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Task 2 (Optional)</FormLabel>
+                            <FormLabel>Planting Date</FormLabel>
                             <FormControl>
-                              <Input placeholder="Pest control" {...field} />
+                              <Input type="date" {...field} required />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -494,32 +420,96 @@ export default function Crops() {
                       
                       <FormField
                         control={form.control}
-                        name="task2DueDate"
+                        name="estimatedHarvest"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Due Date</FormLabel>
+                            <FormLabel>Estimated Harvest</FormLabel>
                             <FormControl>
-                              <Input placeholder="Jun 05" {...field} />
+                              <Input type="date" {...field} required />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
                     </div>
-                  </div>
-                  
-                  <div className="flex justify-end gap-2 pt-4">
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      onClick={() => setIsDialogOpen(false)}
-                    >
-                      Cancel
-                    </Button>
-                    <Button type="submit">Add Crop</Button>
-                  </div>
-                </form>
-              </Form>
+                    
+                    <div className="space-y-4">
+                      <h3 className="font-medium">Initial Tasks</h3>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="task1"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Task 1</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Apply fertilizer" {...field} required />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={form.control}
+                          name="task1DueDate"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Due Date</FormLabel>
+                              <FormControl>
+                                <Input type="date" {...field} required />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="task2"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Task 2 (Optional)</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Pest control" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={form.control}
+                          name="task2DueDate"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Due Date</FormLabel>
+                              <FormControl>
+                                <Input type="date" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="flex justify-end gap-2 pt-4">
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        onClick={() => setIsDialogOpen(false)}
+                      >
+                        Cancel
+                      </Button>
+                      <Button type="submit">Add Crop</Button>
+                    </div>
+                  </form>
+                </Form>
+              </ScrollArea>
             </DialogContent>
           </Dialog>
         </div>

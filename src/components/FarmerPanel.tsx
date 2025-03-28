@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -64,7 +63,6 @@ export function FarmerPanel() {
     }[];
   }[]>([]);
   
-  // Sample inventory items for dropdown selection
   const availableItems = [
     { name: "Organic Fertilizer", price: 850, unit: "kg" },
     { name: "Tomato Seeds", price: 450, unit: "packet" },
@@ -83,7 +81,6 @@ export function FarmerPanel() {
     fetchInventory();
     fetchSpecialistsAndSuppliers();
     
-    // Update contact info when user changes
     if (user) {
       setNewRequest(prev => ({
         ...prev,
@@ -119,7 +116,6 @@ export function FarmerPanel() {
       }
     }
     
-    // Set up subscription for real-time updates
     const requestsChannel = supabase
       .channel('requests-changes')
       .on(
@@ -158,7 +154,6 @@ export function FarmerPanel() {
   
   const fetchRequests = async () => {
     try {
-      // First try to get from Supabase
       let { data, error } = await supabase
         .from('requests')
         .select('*')
@@ -167,7 +162,6 @@ export function FarmerPanel() {
       
       if (error) {
         console.error('Error fetching requests:', error);
-        // Fall back to mock data
         const savedRequests = localStorage.getItem('farmlytic_requests');
         if (savedRequests) {
           try {
@@ -212,7 +206,6 @@ export function FarmerPanel() {
   
   const fetchInventory = async () => {
     try {
-      // Get inventory from Supabase
       const { data, error } = await supabase
         .from('inventory')
         .select('*')
@@ -246,7 +239,6 @@ export function FarmerPanel() {
   
   const fetchSpecialistsAndSuppliers = async () => {
     try {
-      // Get specialists from profiles table
       const { data: specialistsData, error: specialistsError } = await supabase
         .from('profiles')
         .select('id, name')
@@ -263,7 +255,6 @@ export function FarmerPanel() {
         setSpecialists(specialistsData);
       }
       
-      // Get suppliers from profiles table
       const { data: suppliersData, error: suppliersError } = await supabase
         .from('profiles')
         .select('id, name')
@@ -418,14 +409,11 @@ export function FarmerPanel() {
     }
     
     try {
-      // For advice requests, don't require a specialist - assign to any specialist
       let targetId = newRequest.targetId;
-      if (newRequest.type === 'advice' && !targetId && specialists.length > 0) {
-        // If no specific specialist is selected, assign to any available specialist
-        targetId = specialists[0].id;
+      if (newRequest.type === 'advice') {
+        targetId = null;
       }
       
-      // Create request in Supabase
       const { data, error } = await supabase
         .from('requests')
         .insert({
@@ -444,7 +432,6 @@ export function FarmerPanel() {
       
       if (error) {
         console.error('Error creating request:', error);
-        // Fall back to local storage
         const newReq: FarmerRequest = {
           id: `req-${Date.now()}`,
           farmerId: user?.id || 'farmer1',
@@ -468,7 +455,6 @@ export function FarmerPanel() {
         setRequests(updatedRequests);
         localStorage.setItem('farmlytic_requests', JSON.stringify(updatedRequests));
       } else {
-        // Request created successfully in Supabase, fetch updated requests
         fetchRequests();
       }
       
@@ -510,8 +496,6 @@ export function FarmerPanel() {
     }
     
     try {
-      // Try to add product to Supabase (this would require a products table)
-      // For now, just use local storage
       const product = {
         id: `prod-${Date.now()}`,
         sellerId: user?.id || 'farmer1',
@@ -633,9 +617,9 @@ export function FarmerPanel() {
               <Input
                 type="number"
                 min="1"
-                value={newRequest.quantity || ''}
+                value={newRequest.quantity}
                 placeholder="Enter quantity needed"
-                onChange={(e) => setNewRequest({...newRequest, quantity: parseInt(e.target.value) || undefined})}
+                onChange={(e) => setNewRequest({...newRequest, quantity: parseInt(e.target.value) || 1})}
               />
             </div>
             
@@ -968,7 +952,7 @@ export function FarmerPanel() {
                   type="number"
                   min="1"
                   placeholder="Enter quantity"
-                  value={newProduct.quantity || ''}
+                  value={newProduct.quantity}
                   onChange={(e) => setNewProduct({...newProduct, quantity: parseInt(e.target.value) || 1})}
                 />
               </div>
@@ -980,7 +964,7 @@ export function FarmerPanel() {
                   min="0.01"
                   step="0.01"
                   placeholder="Enter price in INR"
-                  value={newProduct.price || ''}
+                  value={newProduct.price}
                   onChange={(e) => setNewProduct({...newProduct, price: parseFloat(e.target.value) || 0})}
                 />
               </div>
