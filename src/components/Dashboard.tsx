@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { FieldCard } from '@/components/FieldCard';
-import { MapPin, ArrowUpRight, Droplets, Sun, Wind, Plus, Lightbulb, ShoppingBag, Seeds } from 'lucide-react';
+import { MapPin, ArrowUpRight, Droplets, Sun, Wind, Plus, Lightbulb, ShoppingBag, Sprout } from 'lucide-react';
 import { Field } from '@/types/auth';
 import { FieldForm } from '@/components/FieldForm';
 import { RolePanels } from '@/components/RolePanels';
@@ -149,7 +148,6 @@ export function Dashboard() {
   
   const userRole = getRole() || 'farmer';
   
-  // Role-specific dashboard summary cards
   const renderRoleSummary = () => {
     if (userRole === 'farmer') {
       return (
@@ -157,7 +155,7 @@ export function Dashboard() {
           <Card className="hover-card-effect">
             <CardHeader className="pb-2">
               <CardTitle className="text-xl flex items-center">
-                <Seeds className="h-5 w-5 mr-2 text-green-500" />
+                <Sprout className="h-5 w-5 mr-2 text-green-500" />
                 Crops Overview
               </CardTitle>
             </CardHeader>
@@ -399,10 +397,8 @@ export function Dashboard() {
         />
       ) : (
         <>
-          {/* Role-specific summary cards */}
           {isAuthenticated && renderRoleSummary()}
           
-          {/* Fields section for farmers */}
           {!showFieldForm && fields.length > 0 && userRole === 'farmer' && (
             <div>
               <div className="flex justify-between items-center mb-4">

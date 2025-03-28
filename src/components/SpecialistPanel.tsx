@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -6,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { FarmerRequest } from '@/types/auth';
-import { Lightbulb, MessageCircle, Phone, Mail, Calendar, FileText, BarChart } from 'lucide-react';
+import { Lightbulb, MessageCircle, Phone, Mail, Calendar, FileText, BarChart, Trash2 } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { supabase } from '@/integrations/supabase/client';
 import { ResponsiveContainer, BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
@@ -27,7 +26,6 @@ export function SpecialistPanel() {
     }[];
   }[]>([]);
   
-  // Analytics data for the specialist
   const [analyticsData, setAnalyticsData] = useState([
     { category: 'Crops', answered: 12 },
     { category: 'Pests', answered: 8 },
@@ -57,7 +55,6 @@ export function SpecialistPanel() {
       }
     }
     
-    // Set up subscription for real-time updates on requests
     const requestsChannel = supabase
       .channel('requests-changes')
       .on(
@@ -80,7 +77,6 @@ export function SpecialistPanel() {
   
   const fetchRequests = async () => {
     try {
-      // Fetch all advice requests, not just those targeted at this specialist
       let query = supabase
         .from('requests')
         .select('*')
@@ -95,12 +91,10 @@ export function SpecialistPanel() {
       }
       
       if (data) {
-        // Fetch the farmer names for each request
         const formattedRequests: FarmerRequest[] = await Promise.all(
           data.map(async (req) => {
             let farmerName = "Unknown Farmer";
             
-            // Try to get the farmer's name
             try {
               const { data: profileData, error: profileError } = await supabase
                 .from('profiles')
@@ -159,7 +153,7 @@ export function SpecialistPanel() {
         .update({
           status: newStatus,
           response: response,
-          target_id: user?.id // Assign the request to this specialist
+          target_id: user?.id
         })
         .eq('id', requestId);
         
@@ -180,7 +174,6 @@ export function SpecialistPanel() {
         description: "Your response has been sent to the farmer."
       });
       
-      // Clear response text
       setResponseText(prev => ({
         ...prev,
         [requestId]: ''
@@ -427,7 +420,7 @@ export function SpecialistPanel() {
                           size="sm" 
                           onClick={() => handleDeleteRequest(req.id)}
                         >
-                          <Trash className="h-4 w-4 mr-2" />
+                          <Trash2 className="h-4 w-4 mr-2" />
                           Delete Request
                         </Button>
                       </div>
