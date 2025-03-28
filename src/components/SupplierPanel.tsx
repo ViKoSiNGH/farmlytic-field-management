@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -102,7 +101,7 @@ export function SupplierPanel() {
           quantity: item.quantity,
           unit: item.unit,
           price: item.price || 0,
-          sellerId: item.user_id,
+          sellerId: item.user_id.toString(), // Ensure sellerId is a string
           available: item.available === null ? true : item.available
         }));
         setInventory(items);
@@ -176,10 +175,10 @@ export function SupplierPanel() {
     }
   };
   
-  const getSampleInventory = () => {
+  const getSampleInventory = (): InventoryItem[] => {
     return [
-      { id: "1", type: 'Fertilizer', name: 'DAP', quantity: 100, unit: 'kg', price: 100, sellerId: 1, available: true },
-      { id: "2", type: 'Seeds', name: 'Corn', quantity: 50, unit: 'kg', price: 5, sellerId: 1, available: true }
+      { id: "1", type: 'Fertilizer', name: 'DAP', quantity: 100, unit: 'kg', price: 100, sellerId: "1", available: true },
+      { id: "2", type: 'Seeds', name: 'Corn', quantity: 50, unit: 'kg', price: 5, sellerId: "1", available: true }
     ];
   };
   
