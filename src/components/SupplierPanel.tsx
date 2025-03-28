@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -6,9 +7,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { FarmerRequest, InventoryItem, SellerProduct } from '@/types/auth';
-import { Package, ShoppingBag, Check, X, MessageCircle, Plus, DollarSign, ShoppingCart, Trash } from 'lucide-react';
+import { Package, ShoppingBag, Check, X, MessageCircle, Plus, DollarSign, ShoppingCart, Trash, Mail, Phone } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -94,7 +96,7 @@ export function SupplierPanel() {
       
       if (data && data.length > 0) {
         const items: InventoryItem[] = data.map(item => ({
-          id: item.id,
+          id: item.id.toString(), // Convert id to string to match InventoryItem type
           type: item.type,
           name: item.name,
           quantity: item.quantity,
@@ -176,8 +178,8 @@ export function SupplierPanel() {
   
   const getSampleInventory = () => {
     return [
-      { id: 1, type: 'Fertilizer', name: 'DAP', quantity: 100, unit: 'kg', price: 100, sellerId: 1, available: true },
-      { id: 2, type: 'Seeds', name: 'Corn', quantity: 50, unit: 'kg', price: 5, sellerId: 1, available: true }
+      { id: "1", type: 'Fertilizer', name: 'DAP', quantity: 100, unit: 'kg', price: 100, sellerId: 1, available: true },
+      { id: "2", type: 'Seeds', name: 'Corn', quantity: 50, unit: 'kg', price: 5, sellerId: 1, available: true }
     ];
   };
   
@@ -238,7 +240,7 @@ export function SupplierPanel() {
     }
   };
   
-  const handleDeleteProduct = async (productId: number) => {
+  const handleDeleteProduct = async (productId: string) => {
     try {
       const { error } = await supabase
         .from('inventory')
