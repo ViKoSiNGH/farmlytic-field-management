@@ -17,7 +17,7 @@ export interface FarmerRequest {
   item?: string;
   quantity?: number;
   description: string;
-  status: 'pending' | 'accepted' | 'rejected';
+  status: 'pending' | 'accepted' | 'rejected' | 'completed';
   createdAt: Date;
   targetId?: string;
   response?: string;

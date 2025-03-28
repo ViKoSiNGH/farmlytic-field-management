@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { FarmerRequest, InventoryItem, SellerProduct } from '@/types/auth';
-import { Package, ShoppingBag, Check, X, MessageCircle, Plus, ShoppingCart, Trash2, Mail, Phone, Indian } from 'lucide-react';
+import { Package, ShoppingBag, Check, X, MessageCircle, Plus, ShoppingCart, Trash2, Mail, Phone } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { supabase } from '@/integrations/supabase/client';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
