@@ -6,9 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { FarmerRequest } from '@/types/auth';
-import { Lightbulb, MessageCircle, Phone, Mail, Calendar, FileText } from 'lucide-react';
+import { Lightbulb, MessageCircle, Phone, Mail, Calendar, FileText, BarChart } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { supabase } from '@/integrations/supabase/client';
+import { ResponsiveContainer, BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 export function SpecialistPanel() {
   const { toast } = useToast();
@@ -24,6 +26,16 @@ export function SpecialistPanel() {
       timestamp: Date;
     }[];
   }[]>([]);
+  
+  // Analytics data for the specialist
+  const [analyticsData, setAnalyticsData] = useState([
+    { category: 'Crops', answered: 12 },
+    { category: 'Pests', answered: 8 },
+    { category: 'Diseases', answered: 5 },
+    { category: 'Soil', answered: 7 },
+    { category: 'Irrigation', answered: 9 },
+    { category: 'Fertilizers', answered: 11 }
+  ]);
   
   useEffect(() => {
     fetchRequests();
@@ -68,16 +80,13 @@ export function SpecialistPanel() {
   
   const fetchRequests = async () => {
     try {
+      // Fetch all advice requests, not just those targeted at this specialist
       let query = supabase
         .from('requests')
         .select('*')
+        .eq('type', 'advice')
         .order('created_at', { ascending: false });
         
-      if (user?.id) {
-        // For specialist, show requests that are either targeted at them or are advice requests
-        query = query.or(`target_id.eq.${user.id},type.eq.advice`);
-      }
-      
       const { data, error } = await query;
       
       if (error) {
@@ -149,7 +158,8 @@ export function SpecialistPanel() {
         .from('requests')
         .update({
           status: newStatus,
-          response: response
+          response: response,
+          target_id: user?.id // Assign the request to this specialist
         })
         .eq('id', requestId);
         
@@ -179,6 +189,39 @@ export function SpecialistPanel() {
       await fetchRequests();
     } catch (error) {
       console.error('Failed to update request:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  const handleDeleteRequest = async (requestId: string) => {
+    try {
+      const { error } = await supabase
+        .from('requests')
+        .delete()
+        .eq('id', requestId);
+        
+      if (error) {
+        console.error('Error deleting request:', error);
+        toast({
+          title: "Error",
+          description: "Failed to delete request. Please try again.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      toast({
+        title: "Success",
+        description: "Request deleted successfully."
+      });
+      
+      await fetchRequests();
+    } catch (error) {
+      console.error('Failed to delete request:', error);
       toast({
         title: "Error",
         description: "An unexpected error occurred. Please try again.",
@@ -234,149 +277,211 @@ export function SpecialistPanel() {
   
   return (
     <div className="w-full space-y-6">
-      <h3 className="text-lg font-medium">Advice Requests</h3>
-      
-      {requests.filter(req => req.type === 'advice').length > 0 ? (
-        <div className="space-y-4">
-          {requests
-            .filter(req => req.type === 'advice')
-            .map(req => (
-              <Card key={req.id}>
-                <CardHeader className="pb-2">
-                  <div className="flex justify-between items-center">
-                    <CardTitle className="text-lg flex items-center">
-                      <Lightbulb className="h-5 w-5 mr-2 text-amber-500" />
-                      Advice Request
-                    </CardTitle>
-                    <Badge
-                      variant={
-                        req.status === 'accepted' ? 'default' :
-                        req.status === 'rejected' ? 'destructive' : 'outline'
-                      }
-                    >
-                      {req.status}
-                    </Badge>
-                  </div>
-                  <CardDescription>
-                    From: {req.farmerName} • Requested: {req.createdAt.toLocaleDateString()}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="bg-muted p-3 rounded-md mb-4">
-                    <p className="text-sm font-medium mb-1">Farmer's Question:</p>
-                    <p className="text-sm">{req.description}</p>
-                  </div>
-                  
-                  {req.contactPhone && req.contactEmail && (
-                    <div className="flex flex-col space-y-1 mt-4 mb-4 p-3 bg-muted rounded-md">
-                      <div className="flex items-center">
-                        <Phone className="h-4 w-4 mr-2 text-muted-foreground" />
-                        <p className="text-sm">{req.contactPhone}</p>
-                      </div>
-                      <div className="flex items-center">
-                        <Mail className="h-4 w-4 mr-2 text-muted-foreground" />
-                        <p className="text-sm">{req.contactEmail}</p>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {req.status === 'pending' && (
-                    <div className="mt-4 p-3 bg-muted rounded-md space-y-3">
-                      <h4 className="text-sm font-medium">Your Response</h4>
-                      <Textarea 
-                        placeholder="Enter your expert advice for this farmer..."
-                        className="min-h-[120px]"
-                        value={responseText[req.id] || ''}
-                        onChange={(e) => setResponseText({...responseText, [req.id]: e.target.value})}
-                      />
-                      <div className="flex space-x-2">
-                        <Button 
-                          variant="default" 
-                          className="flex-1"
-                          onClick={() => handleRespondToRequest(req.id, 'accepted')}
+      <Tabs defaultValue="advice" className="w-full" value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid grid-cols-2 mb-4">
+          <TabsTrigger value="advice">
+            <Lightbulb className="h-4 w-4 mr-2" />
+            Advice Requests
+          </TabsTrigger>
+          <TabsTrigger value="analytics">
+            <BarChart className="h-4 w-4 mr-2" />
+            Analytics
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="advice">
+          {requests.filter(req => req.type === 'advice').length > 0 ? (
+            <div className="space-y-4">
+              {requests
+                .filter(req => req.type === 'advice')
+                .map(req => (
+                  <Card key={req.id}>
+                    <CardHeader className="pb-2">
+                      <div className="flex justify-between items-center">
+                        <CardTitle className="text-lg flex items-center">
+                          <Lightbulb className="h-5 w-5 mr-2 text-amber-500" />
+                          Advice Request
+                        </CardTitle>
+                        <Badge
+                          variant={
+                            req.status === 'accepted' ? 'default' :
+                            req.status === 'rejected' ? 'destructive' : 'outline'
+                          }
                         >
-                          Accept & Send Advice
-                        </Button>
-                        <Button 
-                          variant="destructive" 
-                          className="flex-1"
-                          onClick={() => handleRespondToRequest(req.id, 'rejected')}
-                        >
-                          Decline Request
-                        </Button>
+                          {req.status}
+                        </Badge>
                       </div>
-                    </div>
-                  )}
-                  
-                  {req.status !== 'pending' && req.response && (
-                    <div className="mt-4 p-3 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-md">
-                      <p className="text-sm font-medium mb-1">Your Response:</p>
-                      <p className="text-sm">{req.response}</p>
-                    </div>
-                  )}
-                  
-                  {req.status !== 'pending' && (
-                    <div className="mt-4 border rounded-md">
-                      <div className="bg-muted p-2 rounded-t-md border-b">
-                        <h4 className="text-sm font-medium flex items-center">
-                          <MessageCircle className="h-4 w-4 mr-1" />
-                          Conversation with Farmer
-                        </h4>
+                      <CardDescription>
+                        From: {req.farmerName} • Requested: {req.createdAt.toLocaleDateString()}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="bg-muted p-3 rounded-md mb-4">
+                        <p className="text-sm font-medium mb-1">Farmer's Question:</p>
+                        <p className="text-sm">{req.description}</p>
                       </div>
                       
-                      <div className="p-3 max-h-60 overflow-y-auto space-y-2">
-                        {getChatForRequest(req.id).length > 0 ? (
-                          getChatForRequest(req.id).map((msg, i) => (
-                            <div 
-                              key={i} 
-                              className={`p-2 rounded-lg max-w-[85%] ${
-                                msg.sender === 'specialist' 
-                                  ? 'ml-auto bg-primary/10 text-primary-foreground' 
-                                  : 'bg-muted'
-                              }`}
+                      {req.contactPhone && req.contactEmail && (
+                        <div className="flex flex-col space-y-1 mt-4 mb-4 p-3 bg-muted rounded-md">
+                          <div className="flex items-center">
+                            <Phone className="h-4 w-4 mr-2 text-muted-foreground" />
+                            <p className="text-sm">{req.contactPhone}</p>
+                          </div>
+                          <div className="flex items-center">
+                            <Mail className="h-4 w-4 mr-2 text-muted-foreground" />
+                            <p className="text-sm">{req.contactEmail}</p>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {req.status === 'pending' && (
+                        <div className="mt-4 p-3 bg-muted rounded-md space-y-3">
+                          <h4 className="text-sm font-medium">Your Response</h4>
+                          <Textarea 
+                            placeholder="Enter your expert advice for this farmer..."
+                            className="min-h-[120px]"
+                            value={responseText[req.id] || ''}
+                            onChange={(e) => setResponseText({...responseText, [req.id]: e.target.value})}
+                          />
+                          <div className="flex space-x-2">
+                            <Button 
+                              variant="default" 
+                              className="flex-1"
+                              onClick={() => handleRespondToRequest(req.id, 'accepted')}
                             >
-                              <p className="text-xs font-medium">{msg.sender === 'specialist' ? 'You' : 'Farmer'}</p>
-                              <p className="text-sm">{msg.text}</p>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                {msg.timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                              </p>
-                            </div>
-                          ))
-                        ) : (
-                          <p className="text-xs text-center text-muted-foreground py-2">No messages yet</p>
-                        )}
-                      </div>
+                              Accept & Send Advice
+                            </Button>
+                            <Button 
+                              variant="destructive" 
+                              className="flex-1"
+                              onClick={() => handleRespondToRequest(req.id, 'rejected')}
+                            >
+                              Decline Request
+                            </Button>
+                          </div>
+                        </div>
+                      )}
                       
-                      <div className="p-2 border-t flex gap-2">
-                        <Textarea 
-                          id={`chat-${req.id}`}
-                          placeholder="Type a message..."
-                          className="min-h-[60px] text-sm"
-                        />
+                      {req.status !== 'pending' && req.response && (
+                        <div className="mt-4 p-3 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-md">
+                          <p className="text-sm font-medium mb-1">Your Response:</p>
+                          <p className="text-sm">{req.response}</p>
+                        </div>
+                      )}
+                      
+                      {req.status !== 'pending' && (
+                        <div className="mt-4 border rounded-md">
+                          <div className="bg-muted p-2 rounded-t-md border-b">
+                            <h4 className="text-sm font-medium flex items-center">
+                              <MessageCircle className="h-4 w-4 mr-1" />
+                              Conversation with Farmer
+                            </h4>
+                          </div>
+                          
+                          <div className="p-3 max-h-60 overflow-y-auto space-y-2">
+                            {getChatForRequest(req.id).length > 0 ? (
+                              getChatForRequest(req.id).map((msg, i) => (
+                                <div 
+                                  key={i} 
+                                  className={`p-2 rounded-lg max-w-[85%] ${
+                                    msg.sender === 'specialist' 
+                                      ? 'ml-auto bg-primary/10 text-primary-foreground' 
+                                      : 'bg-muted'
+                                  }`}
+                                >
+                                  <p className="text-xs font-medium">{msg.sender === 'specialist' ? 'You' : 'Farmer'}</p>
+                                  <p className="text-sm">{msg.text}</p>
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    {msg.timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                  </p>
+                                </div>
+                              ))
+                            ) : (
+                              <p className="text-xs text-center text-muted-foreground py-2">No messages yet</p>
+                            )}
+                          </div>
+                          
+                          <div className="p-2 border-t flex gap-2">
+                            <Textarea 
+                              id={`chat-${req.id}`}
+                              placeholder="Type a message..."
+                              className="min-h-[60px] text-sm"
+                            />
+                            <Button 
+                              size="sm" 
+                              className="self-end"
+                              onClick={() => {
+                                const textarea = document.getElementById(`chat-${req.id}`) as HTMLTextAreaElement;
+                                handleSendChatMessage(req.id, textarea.value);
+                              }}
+                            >
+                              Send
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                      
+                      <div className="mt-4 flex justify-end">
                         <Button 
+                          variant="outline" 
                           size="sm" 
-                          className="self-end"
-                          onClick={() => {
-                            const textarea = document.getElementById(`chat-${req.id}`) as HTMLTextAreaElement;
-                            handleSendChatMessage(req.id, textarea.value);
-                          }}
+                          onClick={() => handleDeleteRequest(req.id)}
                         >
-                          Send
+                          <Trash className="h-4 w-4 mr-2" />
+                          Delete Request
                         </Button>
                       </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-        </div>
-      ) : (
-        <Card>
-          <CardContent className="py-6 text-center text-muted-foreground">
-            No advice requests found. Check back later!
-          </CardContent>
-        </Card>
-      )}
+                    </CardContent>
+                  </Card>
+                ))}
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="py-6 text-center text-muted-foreground">
+                No advice requests found. Check back later!
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+        
+        <TabsContent value="analytics">
+          <Card>
+            <CardHeader>
+              <CardTitle>Advice Performance</CardTitle>
+              <CardDescription>Number of questions answered by category</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RechartsBarChart data={analyticsData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="category" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="answered" fill="#8884d8" name="Questions Answered" />
+                  </RechartsBarChart>
+                </ResponsiveContainer>
+              </div>
+              
+              <div className="grid grid-cols-3 gap-4 mt-6">
+                <div className="bg-muted rounded-md p-4 text-center">
+                  <h3 className="text-sm font-medium mb-1">Total Requests</h3>
+                  <p className="text-2xl font-bold">{requests.length}</p>
+                </div>
+                <div className="bg-muted rounded-md p-4 text-center">
+                  <h3 className="text-sm font-medium mb-1">Pending</h3>
+                  <p className="text-2xl font-bold">{requests.filter(r => r.status === 'pending').length}</p>
+                </div>
+                <div className="bg-muted rounded-md p-4 text-center">
+                  <h3 className="text-sm font-medium mb-1">Questions Answered</h3>
+                  <p className="text-2xl font-bold">{requests.filter(r => r.status === 'accepted').length}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

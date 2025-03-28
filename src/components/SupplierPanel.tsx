@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -12,6 +13,7 @@ import { FarmerRequest, InventoryItem, SellerProduct } from '@/types/auth';
 import { Package, ShoppingBag, Check, X, MessageCircle, Plus, DollarSign, ShoppingCart, Trash, Mail, Phone } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { supabase } from '@/integrations/supabase/client';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 export function SupplierPanel() {
   const { toast } = useToast();
@@ -32,14 +34,25 @@ export function SupplierPanel() {
   const [newProduct, setNewProduct] = useState({
     name: '',
     type: 'Fertilizer',
-    quantity: 1,
+    quantity: '',
     unit: 'kg',
     price: 0,
   });
   
+  // Analytics data for the supplier
+  const [analyticsData, setAnalyticsData] = useState([
+    { name: 'Jan', sales: 400, expenses: 300, profit: 100 },
+    { name: 'Feb', sales: 300, expenses: 200, profit: 100 },
+    { name: 'Mar', sales: 500, expenses: 350, profit: 150 },
+    { name: 'Apr', sales: 700, expenses: 400, profit: 300 },
+    { name: 'May', sales: 600, expenses: 450, profit: 150 },
+    { name: 'Jun', sales: 800, expenses: 500, profit: 300 }
+  ]);
+  
   useEffect(() => {
     fetchInventory();
     fetchRequests();
+    fetchFarmerProducts();
     
     const savedMessages = localStorage.getItem('farmlytic_supplier_chat_messages');
     if (savedMessages) {
@@ -95,13 +108,13 @@ export function SupplierPanel() {
       
       if (data && data.length > 0) {
         const items: InventoryItem[] = data.map(item => ({
-          id: item.id.toString(), // Convert id to string to match InventoryItem type
+          id: item.id.toString(),
           type: item.type,
           name: item.name,
           quantity: item.quantity,
           unit: item.unit,
           price: item.price || 0,
-          sellerId: item.user_id.toString(), // Ensure sellerId is a string
+          sellerId: item.user_id.toString(),
           available: item.available === null ? true : item.available
         }));
         setInventory(items);
@@ -114,15 +127,37 @@ export function SupplierPanel() {
     }
   };
   
+  const fetchFarmerProducts = async () => {
+    try {
+      // Fetch products listed by farmers that suppliers can add to their inventory
+      const { data, error } = await supabase
+        .from('requests')
+        .select('*')
+        .eq('type', 'sell')
+        .order('created_at', { ascending: false });
+        
+      if (error) {
+        console.error('Error fetching farmer products:', error);
+        return;
+      }
+      
+      // Process the data if needed
+      console.log('Farmer products for sale:', data);
+      
+    } catch (error) {
+      console.error('Failed to fetch farmer products:', error);
+    }
+  };
+  
   const fetchRequests = async () => {
     if (!user) return;
     
     try {
+      // Fetch all purchase requests, not just those targeting this supplier
       const { data, error } = await supabase
         .from('requests')
         .select('*')
         .eq('type', 'purchase')
-        .eq('target_id', user.id)
         .order('created_at', { ascending: false });
         
       if (error) {
@@ -199,7 +234,7 @@ export function SupplierPanel() {
           user_id: user?.id,
           name: newProduct.name,
           type: newProduct.type,
-          quantity: newProduct.quantity,
+          quantity: parseInt(newProduct.quantity) || 0,
           unit: newProduct.unit,
           price: newProduct.price,
           available: true
@@ -223,7 +258,7 @@ export function SupplierPanel() {
       setNewProduct({
         name: '',
         type: 'Fertilizer',
-        quantity: 1,
+        quantity: '',
         unit: 'kg',
         price: 0
       });
@@ -264,6 +299,39 @@ export function SupplierPanel() {
       await fetchInventory();
     } catch (error) {
       console.error('Failed to delete inventory item:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  const handleDeleteRequest = async (requestId: string) => {
+    try {
+      const { error } = await supabase
+        .from('requests')
+        .delete()
+        .eq('id', requestId);
+        
+      if (error) {
+        console.error('Error deleting request:', error);
+        toast({
+          title: "Error",
+          description: "Failed to delete request. Please try again.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      toast({
+        title: "Success",
+        description: "Request deleted successfully."
+      });
+      
+      await fetchRequests();
+    } catch (error) {
+      console.error('Failed to delete request:', error);
       toast({
         title: "Error",
         description: "An unexpected error occurred. Please try again.",
@@ -373,7 +441,7 @@ export function SupplierPanel() {
   
   return (
     <Tabs defaultValue="inventory" className="w-full" value={activeTab} onValueChange={setActiveTab}>
-      <TabsList className="grid grid-cols-2 mb-4">
+      <TabsList className="grid grid-cols-3 mb-4">
         <TabsTrigger value="inventory">
           <Package className="h-4 w-4 mr-2" />
           Manage Inventory
@@ -381,6 +449,10 @@ export function SupplierPanel() {
         <TabsTrigger value="orders">
           <ShoppingBag className="h-4 w-4 mr-2" />
           Purchase Requests
+        </TabsTrigger>
+        <TabsTrigger value="analytics">
+          <DollarSign className="h-4 w-4 mr-2" />
+          Analytics
         </TabsTrigger>
       </TabsList>
       
@@ -437,10 +509,10 @@ export function SupplierPanel() {
               <div className="space-y-2">
                 <label className="text-sm font-medium">Quantity</label>
                 <Input 
-                  type="number" 
-                  min="1"
+                  type="text" 
+                  placeholder="Enter quantity"
                   value={newProduct.quantity}
-                  onChange={(e) => setNewProduct({...newProduct, quantity: parseInt(e.target.value) || 1})}
+                  onChange={(e) => setNewProduct({...newProduct, quantity: e.target.value})}
                 />
               </div>
               
@@ -622,6 +694,17 @@ export function SupplierPanel() {
                         </div>
                       </div>
                     )}
+                    
+                    <div className="mt-4 flex justify-end">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => handleDeleteRequest(req.id)}
+                      >
+                        <Trash className="h-4 w-4 mr-2" />
+                        Delete Request
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               ))}
@@ -633,6 +716,46 @@ export function SupplierPanel() {
             </CardContent>
           </Card>
         )}
+      </TabsContent>
+      
+      <TabsContent value="analytics" className="space-y-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>Sales Performance</CardTitle>
+            <CardDescription>Profit and loss analysis of your products</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={analyticsData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Line type="monotone" dataKey="sales" stroke="#8884d8" name="Total Sales" />
+                  <Line type="monotone" dataKey="expenses" stroke="#82ca9d" name="Expenses" />
+                  <Line type="monotone" dataKey="profit" stroke="#ff7300" name="Profit" />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+            
+            <div className="grid grid-cols-3 gap-4 mt-6">
+              <div className="bg-muted rounded-md p-4 text-center">
+                <h3 className="text-sm font-medium mb-1">Total Products</h3>
+                <p className="text-2xl font-bold">{inventory.length}</p>
+              </div>
+              <div className="bg-muted rounded-md p-4 text-center">
+                <h3 className="text-sm font-medium mb-1">Active Requests</h3>
+                <p className="text-2xl font-bold">{requests.filter(r => r.status === 'pending').length}</p>
+              </div>
+              <div className="bg-muted rounded-md p-4 text-center">
+                <h3 className="text-sm font-medium mb-1">Completed Sales</h3>
+                <p className="text-2xl font-bold">{requests.filter(r => r.status === 'accepted').length}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </TabsContent>
     </Tabs>
   );

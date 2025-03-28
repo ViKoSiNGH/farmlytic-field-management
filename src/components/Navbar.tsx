@@ -1,8 +1,9 @@
+
 import React from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { GardenIcon, SeedlingIcon } from '@/components/GardenIcon';
-import { Cloud, LayoutDashboard, Settings, BarChart, Menu, X, User, LogOut } from 'lucide-react';
+import { Cloud, LayoutDashboard, Settings, BarChart, Menu, X, User, LogOut, ShoppingBag, Lightbulb } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -23,19 +24,41 @@ export function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Define nav items with exact paths that match the router configuration
-  const navItems = [
-    { name: 'Dashboard', href: '/', icon: <LayoutDashboard className="h-4 w-4 mr-2" /> },
-    { name: 'Fields', href: '/fields', icon: <GardenIcon className="h-4 w-4 mr-2" /> },
-    { name: 'Crops', href: '/crops', icon: <SeedlingIcon className="h-4 w-4 mr-2" /> },
-    { name: 'Weather', href: '/weather', icon: <Cloud className="h-4 w-4 mr-2" /> },
-    { name: 'Analytics', href: '/analytics', icon: <BarChart className="h-4 w-4 mr-2" /> },
-  ];
+  // Define role-specific navigation based on user role
+  const getNavItems = () => {
+    const baseNavItems = [
+      { name: 'Dashboard', href: '/', icon: <LayoutDashboard className="h-4 w-4 mr-2" /> },
+    ];
+    
+    if (!user) return baseNavItems;
+    
+    if (user.role === 'farmer') {
+      return [
+        ...baseNavItems,
+        { name: 'Fields', href: '/fields', icon: <GardenIcon className="h-4 w-4 mr-2" /> },
+        { name: 'Crops', href: '/crops', icon: <SeedlingIcon className="h-4 w-4 mr-2" /> },
+        { name: 'Weather', href: '/weather', icon: <Cloud className="h-4 w-4 mr-2" /> },
+        { name: 'Analytics', href: '/analytics', icon: <BarChart className="h-4 w-4 mr-2" /> },
+        { name: 'Farmer Tools', href: '/farmer', icon: <User className="h-4 w-4 mr-2" /> }
+      ];
+    } else if (user.role === 'supplier') {
+      return [
+        ...baseNavItems,
+        { name: 'Analytics', href: '/analytics', icon: <BarChart className="h-4 w-4 mr-2" /> },
+        { name: 'Supplier Tools', href: '/supplier', icon: <ShoppingBag className="h-4 w-4 mr-2" /> }
+      ];
+    } else if (user.role === 'specialist') {
+      return [
+        ...baseNavItems,
+        { name: 'Analytics', href: '/analytics', icon: <BarChart className="h-4 w-4 mr-2" /> },
+        { name: 'Specialist Tools', href: '/specialist', icon: <Lightbulb className="h-4 w-4 mr-2" /> }
+      ];
+    }
+    
+    return baseNavItems;
+  };
 
-  // If user is a farmer, add the farmer page to the nav items
-  if (user && user.role === 'farmer') {
-    navItems.push({ name: 'Farmer Tools', href: '/farmer', icon: <User className="h-4 w-4 mr-2" /> });
-  }
+  const navItems = getNavItems();
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
