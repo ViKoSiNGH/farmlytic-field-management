@@ -93,20 +93,7 @@ export function Dashboard() {
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Card className="hover:shadow-md transition-all">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Total Crops</CardTitle>
-                <Wheat className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.crops}</div>
-                <p className="text-xs text-muted-foreground">
-                  {stats.crops > 0 ? 'Actively monitoring crops' : 'Add crops to get started'}
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-md transition-all">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Fields</CardTitle>
+                <CardTitle className="text-sm font-medium">Field Management</CardTitle>
                 <Tractor className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
@@ -114,6 +101,17 @@ export function Dashboard() {
                 <p className="text-xs text-muted-foreground">
                   {stats.fields > 0 ? 'Registered fields' : 'Register fields to get started'}
                 </p>
+              </CardContent>
+            </Card>
+
+            <Card className="hover:shadow-md transition-all">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Weather Report</CardTitle>
+                <Droplets className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">28°C</div>
+                <p className="text-xs text-muted-foreground">Current temperature (Partly Cloudy)</p>
               </CardContent>
             </Card>
 
@@ -141,13 +139,13 @@ export function Dashboard() {
                     ? 'Inventory Items' 
                     : user?.role === 'specialist' 
                       ? 'Completed Advice' 
-                      : 'Weather Updates'}
+                      : 'Forecast'}
                 </CardTitle>
                 {user?.role === 'supplier' 
                   ? <ShoppingBag className="h-4 w-4 text-muted-foreground" />
                   : user?.role === 'specialist'
                     ? <HelpCircle className="h-4 w-4 text-muted-foreground" />
-                    : <Droplets className="h-4 w-4 text-muted-foreground" />}
+                    : <TrendingUp className="h-4 w-4 text-muted-foreground" />}
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
@@ -155,14 +153,14 @@ export function Dashboard() {
                     ? stats.inventory 
                     : user?.role === 'specialist' 
                       ? stats.requests > 0 ? Math.floor(stats.requests / 2) : 0
-                      : '28°C'}
+                      : 'Clear'}
                 </div>
                 <p className="text-xs text-muted-foreground">
                   {user?.role === 'supplier' 
                     ? 'Products available for sale' 
                     : user?.role === 'specialist' 
                       ? 'Successfully resolved cases' 
-                      : 'Current temperature (Partly Cloudy)'}
+                      : 'Next 24 hours forecast'}
                 </p>
               </CardContent>
             </Card>
@@ -179,21 +177,25 @@ export function Dashboard() {
               <CardContent className="space-y-4">
                 <div className="rounded-md overflow-hidden">
                   <img 
-                    src="https://images.unsplash.com/photo-1472396961693-142e6e269027?auto=format&fit=crop&w=800&h=400" 
+                    src="/lovable-uploads/b17c3e60-1feb-4d93-97d6-9d82335b2af4.png" 
                     alt="Agricultural management" 
                     className="w-full h-48 object-cover"
                   />
                 </div>
                 <div className="space-y-2">
-                  <h3 className="font-medium">FarmLytic helps you:</h3>
+                  <h3 className="font-medium">FarmLytic: Empowering Farmers with Technology</h3>
+                  <p className="text-sm text-muted-foreground">
+                    FarmLytic is a comprehensive farm management platform designed to revolutionize agricultural operations through technology. Our platform connects farmers with suppliers and agricultural specialists, creating an ecosystem that supports sustainable and efficient farming practices.
+                  </p>
+                  <h3 className="font-medium">Key Features:</h3>
                   <ul className="space-y-1 text-sm text-muted-foreground list-disc pl-5">
-                    <li>Track and manage crops throughout their lifecycle</li>
-                    <li>Monitor field conditions and plan agricultural activities</li>
-                    <li>Connect with suppliers for agricultural inputs</li>
-                    <li>Get expert advice from agricultural specialists</li>
-                    <li>Sell your agricultural products to a wider market</li>
-                    <li>Maximize yield through data-driven decisions</li>
-                    <li>Reduce waste through efficient resource management</li>
+                    <li>Track and manage crops throughout their lifecycle with detailed analytics</li>
+                    <li>Monitor field conditions and plan agricultural activities with precision</li>
+                    <li>Connect with verified suppliers for agricultural inputs with transparent pricing</li>
+                    <li>Get expert advice from agricultural specialists on crop management and pest control</li>
+                    <li>Access real-time weather forecasts and alerts specific to field locations</li>
+                    <li>Maximize yield through data-driven decisions and best practices</li>
+                    <li>Reduce waste through efficient resource management and optimization</li>
                   </ul>
                 </div>
               </CardContent>
@@ -216,7 +218,7 @@ export function Dashboard() {
               <CardContent className="space-y-4">
                 <div className="rounded-md overflow-hidden">
                   <img 
-                    src="https://images.unsplash.com/photo-1465146344425-f00d5f5c8f07?auto=format&fit=crop&w=800&h=400" 
+                    src="https://images.unsplash.com/photo-1523348837708-15d4a09cfac2?auto=format&fit=crop&w=800&h=400" 
                     alt="Crop monitoring" 
                     className="w-full h-48 object-cover" 
                   />
@@ -266,13 +268,13 @@ export function Dashboard() {
               <CardContent>
                 <div className="rounded-md overflow-hidden mb-4">
                   <img 
-                    src="https://images.unsplash.com/photo-1557234195-6f5f8613939c?auto=format&fit=crop&w=800&h=400" 
+                    src="https://images.unsplash.com/photo-1625246333195-78d9c38ad449?auto=format&fit=crop&w=800&h=400" 
                     alt="Resource optimization" 
                     className="w-full h-36 object-cover" 
                   />
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Optimize water, fertilizer, and other inputs based on field conditions and crop requirements.
+                  Optimize water, fertilizer, and other inputs based on field conditions and crop requirements using our intelligent resource management system.
                 </p>
               </CardContent>
             </Card>
@@ -284,31 +286,31 @@ export function Dashboard() {
               <CardContent>
                 <div className="rounded-md overflow-hidden mb-4">
                   <img 
-                    src="https://images.unsplash.com/photo-1604719312566-8912e9c8ba48?auto=format&fit=crop&w=800&h=400" 
+                    src="https://images.unsplash.com/photo-1563986768494-4dee2763ff3f?auto=format&fit=crop&w=800&h=400" 
                     alt="Market insights" 
                     className="w-full h-36 object-cover" 
                   />
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Stay updated with current market trends and price forecasts for your agricultural products.
+                  Stay updated with current market trends and price forecasts for your agricultural products with our real-time market intelligence platform.
                 </p>
               </CardContent>
             </Card>
             
             <Card className="hover:shadow-md transition-all transform hover:-translate-y-1">
               <CardHeader className="pb-2">
-                <CardTitle className="text-lg">Weather Forecasts</CardTitle>
+                <CardTitle className="text-lg">Expert Support</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="rounded-md overflow-hidden mb-4">
                   <img 
-                    src="https://images.unsplash.com/photo-1592210454359-9043f067919b?auto=format&fit=crop&w=800&h=400" 
-                    alt="Weather forecasts" 
+                    src="https://images.unsplash.com/photo-1590682680695-43b964a3ae17?auto=format&fit=crop&w=800&h=400" 
+                    alt="Expert support" 
                     className="w-full h-36 object-cover" 
                   />
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Access 10-day weather forecasts specific to your field locations to plan activities accordingly.
+                  Access personalized agricultural advice from certified specialists who can help you maximize crop yields and solve farming challenges.
                 </p>
               </CardContent>
             </Card>

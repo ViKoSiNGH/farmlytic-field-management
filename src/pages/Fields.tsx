@@ -47,7 +47,7 @@ export default function Fields() {
         crops: ['Corn', 'Soybeans'],
         createdAt: new Date('2023-01-15'),
         soilType: 'loam',
-        image: 'https://source.unsplash.com/random/800x600/?farm,field'
+        image: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1200&h=800&q=80'
       },
       {
         id: 'field-2',
@@ -59,7 +59,7 @@ export default function Fields() {
         crops: ['Wheat'],
         createdAt: new Date('2023-03-10'),
         soilType: 'clay',
-        image: 'https://source.unsplash.com/random/800x600/?field,agriculture'
+        image: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1200&h=800&q=80'
       }
     ];
   };

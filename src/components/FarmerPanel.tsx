@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -63,6 +64,7 @@ export function FarmerPanel() {
     }[];
   }[]>([]);
   
+  // Define available items with INR currency
   const availableItems = [
     { name: "Organic Fertilizer", price: 850, unit: "kg" },
     { name: "Tomato Seeds", price: 450, unit: "packet" },
@@ -409,6 +411,8 @@ export function FarmerPanel() {
     }
     
     try {
+      // For advice requests, we don't need to target a specific specialist
+      // The system will automatically assign it to available specialists
       let targetId = newRequest.targetId;
       if (newRequest.type === 'advice') {
         targetId = null;
@@ -620,6 +624,7 @@ export function FarmerPanel() {
                 value={newRequest.quantity}
                 placeholder="Enter quantity needed"
                 onChange={(e) => setNewRequest({...newRequest, quantity: parseInt(e.target.value) || 1})}
+                className="w-full"
               />
             </div>
             
@@ -958,7 +963,7 @@ export function FarmerPanel() {
               </div>
               
               <div className="space-y-2">
-                <label className="text-sm font-medium">Price (₹)</label>
+                <label className="text-sm font-medium">Price (INR)</label>
                 <Input
                   type="number"
                   min="0.01"
@@ -987,7 +992,7 @@ export function FarmerPanel() {
         </Card>
         
         <h3 className="text-lg font-medium mt-6">Your Listed Products</h3>
-        <div className="space-y-4">
+        <div className="space-y-4 max-h-[600px] overflow-y-auto">
           {sellerProducts
             .filter(product => product.sellerId === (user?.id || 'farmer1'))
             .map(product => (
