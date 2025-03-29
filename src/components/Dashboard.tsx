@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/hooks/use-auth';
@@ -6,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   BarChart, CalendarRange, Tractor, Wheat, Droplets, LineChart, 
   TrendingUp, ShoppingBag, HelpCircle, PieChart, ArrowUpRight,
-  Plant, Sun, CloudRain, Thermometer, Wind, Cloud, AlertCircle,
+  Seedling, Sun, CloudRain, Thermometer, Wind, Cloud, AlertCircle,
   Leaf, Settings, Sprout
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -306,7 +305,7 @@ export function Dashboard() {
                       <div className="space-y-2">
                         <div className="flex items-center text-xs text-muted-foreground">
                           <span className="bg-green-100 dark:bg-green-800/30 text-green-800 dark:text-green-300 p-1 rounded mr-2">
-                            <Plant className="h-3 w-3" />
+                            <Seedling className="h-3 w-3" />
                           </span>
                           <span>Wheat crop planted in North Field</span>
                           <span className="ml-auto text-xs">2d ago</span>
