@@ -1,24 +1,18 @@
-
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { useForm } from 'react-hook-form';
-import { useToast } from '@/hooks/use-toast';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Button } from "@/components/ui/button"
+import { useToast } from "@/hooks/use-toast"
 import { useAuth } from '@/hooks/use-auth';
-import { supabase } from '@/integrations/supabase/client';
-import { Loader2 } from 'lucide-react';
-import { ScrollArea } from '@/components/ui/scroll-area';
-
-interface UserSettingsFormData {
-  name: string;
-  email: string;
-  phone?: string;
-  currentPassword?: string;
-  newPassword?: string;
-  confirmPassword?: string;
-}
+import { ScrollArea } from "@/components/ui/scroll-area"
 
 interface UserSettingsModalProps {
   isOpen: boolean;
@@ -26,208 +20,210 @@ interface UserSettingsModalProps {
 }
 
 export function UserSettingsModal({ isOpen, onClose }: UserSettingsModalProps) {
-  const { user, logout } = useAuth();
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
-  const [showPasswordChange, setShowPasswordChange] = useState(false);
+  const { user, updateUserProfile, updatePassword } = useAuth();
   
-  const { register, handleSubmit, formState: { errors }, reset, watch } = useForm<UserSettingsFormData>({
-    defaultValues: {
-      name: user?.name || '',
-      email: user?.email || '',
-      phone: user?.phone || '',
-    }
+  const [profileForm, setProfileForm] = useState({
+    name: user?.name || '',
+    email: user?.email || '',
+    phone: user?.phone || '',
   });
   
-  const onSubmit = async (data: UserSettingsFormData) => {
-    if (!user) return;
-    
-    setIsLoading(true);
-    try {
-      // Update basic profile information
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({
-          name: data.name,
-          phone: data.phone || null
-        })
-        .eq('id', user.id);
-        
-      if (profileError) {
-        throw new Error(profileError.message);
-      }
-      
-      // Handle password change if requested
-      if (showPasswordChange && data.currentPassword && data.newPassword) {
-        const { error: passwordError } = await supabase.auth.updateUser({
-          password: data.newPassword
-        });
-        
-        if (passwordError) {
-          throw new Error(passwordError.message);
-        }
-      }
-      
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+  
+  const handleProfileUpdate = async () => {
+    if (!profileForm.name || !profileForm.email || !profileForm.phone) {
       toast({
-        title: "Settings Updated",
-        description: "Your account settings have been updated successfully."
-      });
-      
-      onClose();
-      
-      // Reset the form
-      reset({
-        name: data.name,
-        email: user.email,
-        phone: data.phone,
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: ''
-      });
-      
-      setShowPasswordChange(false);
-    } catch (error) {
-      console.error('Error updating user settings:', error);
-      toast({
-        title: "Update Failed",
-        description: error instanceof Error ? error.message : "Failed to update settings.",
+        title: "Missing Information",
+        description: "Please fill in all fields.",
         variant: "destructive"
       });
-    } finally {
-      setIsLoading(false);
+      return;
+    }
+    
+    try {
+      await updateUserProfile(profileForm);
+      toast({
+        title: "Profile Updated",
+        description: "Your profile has been updated successfully."
+      });
+    } catch (error: any) {
+      console.error("Profile update failed:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update profile. Please try again.",
+        variant: "destructive"
+      });
     }
   };
   
+  const handlePasswordUpdate = async () => {
+    if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all password fields.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      toast({
+        title: "Passwords Do Not Match",
+        description: "New password and confirm password do not match.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Password strength validation
+    const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+{}\[\]:;<>,.?~\\/-]).{8,}$/;
+    if (!passwordRegex.test(passwordForm.newPassword)) {
+      toast({
+        title: "Weak Password",
+        description: "Password must be at least 8 characters long and include at least one uppercase letter, one number, and one special character.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    try {
+      await updatePassword(passwordForm.currentPassword, passwordForm.newPassword);
+      toast({
+        title: "Password Updated",
+        description: "Your password has been updated successfully."
+      });
+      
+      // Clear password form
+      setPasswordForm({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+      });
+    } catch (error: any) {
+      console.error("Password update failed:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update password. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Account Settings</DialogTitle>
+          <DialogTitle>User Settings</DialogTitle>
           <DialogDescription>
-            Update your account information and preferences.
+            Update your profile information and preferences
           </DialogDescription>
         </DialogHeader>
         
-        <ScrollArea className="max-h-[70vh]">
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4 px-1">
+        <Tabs defaultValue="profile">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="profile">Profile</TabsTrigger>
+            <TabsTrigger value="password">Password</TabsTrigger>
+            <TabsTrigger value="preferences">Preferences</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="profile" className="space-y-4 mt-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Full Name</Label>
+              <Label htmlFor="name">Name</Label>
               <Input 
                 id="name" 
-                {...register('name', { required: "Name is required" })}
-                className={errors.name ? "border-red-500" : ""}
+                value={profileForm.name} 
+                onChange={(e) => setProfileForm({...profileForm, name: e.target.value})}
               />
-              {errors.name && <p className="text-red-500 text-sm">{errors.name.message}</p>}
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="email">Email Address</Label>
+              <Label htmlFor="email">Email</Label>
               <Input 
                 id="email" 
-                {...register('email')}
-                disabled 
-                className="bg-muted cursor-not-allowed"
+                type="email" 
+                value={profileForm.email} 
+                onChange={(e) => setProfileForm({...profileForm, email: e.target.value})}
               />
-              <p className="text-xs text-muted-foreground">Email can't be changed. Contact support for assistance.</p>
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="phone">Phone Number (Optional)</Label>
+              <Label htmlFor="phone">Phone Number</Label>
               <Input 
                 id="phone" 
-                {...register('phone')}
-                placeholder="e.g., +91 12345 67890"
+                type="tel" 
+                value={profileForm.phone} 
+                onChange={(e) => setProfileForm({...profileForm, phone: e.target.value})}
               />
             </div>
             
-            <div className="pt-4 border-t">
-              {!showPasswordChange ? (
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => setShowPasswordChange(true)}
-                >
-                  Change Password
-                </Button>
-              ) : (
-                <div className="space-y-4">
-                  <h4 className="font-medium">Change Password</h4>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="currentPassword">Current Password</Label>
-                    <Input 
-                      id="currentPassword" 
-                      type="password" 
-                      {...register('currentPassword', { 
-                        required: showPasswordChange ? "Current password is required" : false 
-                      })}
-                      className={errors.currentPassword ? "border-red-500" : ""}
-                    />
-                    {errors.currentPassword && 
-                      <p className="text-red-500 text-sm">{errors.currentPassword.message}</p>}
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="newPassword">New Password</Label>
-                    <Input 
-                      id="newPassword" 
-                      type="password" 
-                      {...register('newPassword', { 
-                        required: showPasswordChange ? "New password is required" : false,
-                        minLength: { value: 6, message: "Password must be at least 6 characters" }
-                      })}
-                      className={errors.newPassword ? "border-red-500" : ""}
-                    />
-                    {errors.newPassword && 
-                      <p className="text-red-500 text-sm">{errors.newPassword.message}</p>}
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="confirmPassword">Confirm New Password</Label>
-                    <Input 
-                      id="confirmPassword" 
-                      type="password" 
-                      {...register('confirmPassword', { 
-                        required: showPasswordChange ? "Please confirm your password" : false,
-                        validate: value => 
-                          !showPasswordChange || !watch('newPassword') || 
-                          value === watch('newPassword') || "Passwords do not match"
-                      })}
-                      className={errors.confirmPassword ? "border-red-500" : ""}
-                    />
-                    {errors.confirmPassword && 
-                      <p className="text-red-500 text-sm">{errors.confirmPassword.message}</p>}
-                  </div>
-                  
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={() => setShowPasswordChange(false)}
-                  >
-                    Cancel Password Change
-                  </Button>
+            <Button onClick={handleProfileUpdate} className="w-full">
+              Update Profile
+            </Button>
+          </TabsContent>
+          
+          <TabsContent value="password" className="mt-4">
+            <ScrollArea className="h-[300px] pr-4">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="current-password">Current Password</Label>
+                  <Input 
+                    id="current-password" 
+                    type="password" 
+                    value={passwordForm.currentPassword} 
+                    onChange={(e) => setPasswordForm({...passwordForm, currentPassword: e.target.value})}
+                  />
                 </div>
-              )}
-            </div>
-            
-            <DialogFooter className="pt-4">
-              <Button 
-                variant="destructive" 
-                type="button" 
-                onClick={() => {
-                  logout();
-                  onClose();
-                }}
-              >
-                Logout
-              </Button>
-              <Button type="submit" disabled={isLoading}>
-                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Save Changes
-              </Button>
-            </DialogFooter>
-          </form>
-        </ScrollArea>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="new-password">New Password</Label>
+                  <Input 
+                    id="new-password" 
+                    type="password" 
+                    value={passwordForm.newPassword} 
+                    onChange={(e) => setPasswordForm({...passwordForm, newPassword: e.target.value})}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="confirm-password">Confirm Password</Label>
+                  <Input 
+                    id="confirm-password" 
+                    type="password" 
+                    value={passwordForm.confirmPassword} 
+                    onChange={(e) => setPasswordForm({...passwordForm, confirmPassword: e.target.value})}
+                  />
+                </div>
+                
+                <div className="text-sm space-y-2">
+                  <h4 className="font-medium">Password Requirements:</h4>
+                  <ul className="space-y-1 text-muted-foreground list-disc list-inside">
+                    <li>At least 8 characters long</li>
+                    <li>Include at least one uppercase letter</li>
+                    <li>Include at least one number</li>
+                    <li>Include at least one special character</li>
+                  </ul>
+                </div>
+                
+                <Button 
+                  onClick={handlePasswordUpdate} 
+                  disabled={!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword}
+                  className="w-full"
+                >
+                  Update Password
+                </Button>
+              </div>
+            </ScrollArea>
+          </TabsContent>
+          
+          <TabsContent value="preferences" className="space-y-4 mt-4">
+            <div>Preferences content here</div>
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );

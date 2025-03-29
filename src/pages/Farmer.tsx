@@ -6,14 +6,12 @@ import { useAuth } from '@/hooks/use-auth';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { useToast } from '@/hooks/use-toast';
 import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 const Farmer = () => {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
   
   // Initialize farmer settings if needed - but without automatic prompts or redirects
   useEffect(() => {

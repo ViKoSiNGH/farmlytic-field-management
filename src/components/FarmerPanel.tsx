@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -64,7 +63,6 @@ export function FarmerPanel() {
     }[];
   }[]>([]);
   
-  // Define available items with INR currency
   const availableItems = [
     { name: "Organic Fertilizer", price: 850, unit: "kg" },
     { name: "Tomato Seeds", price: 450, unit: "packet" },
@@ -411,8 +409,6 @@ export function FarmerPanel() {
     }
     
     try {
-      // For advice requests, we don't need to target a specific specialist
-      // The system will automatically assign it to available specialists
       let targetId = newRequest.targetId;
       if (newRequest.type === 'advice') {
         targetId = null;
@@ -619,12 +615,17 @@ export function FarmerPanel() {
             <div className="space-y-2">
               <label className="text-sm font-medium">Quantity</label>
               <Input
-                type="number"
-                min="1"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 value={newRequest.quantity}
                 placeholder="Enter quantity needed"
-                onChange={(e) => setNewRequest({...newRequest, quantity: parseInt(e.target.value) || 1})}
-                className="w-full"
+                onChange={(e) => {
+                  const value = e.target.value.replace(/[^0-9]/g, '');
+                  setNewRequest({...newRequest, quantity: value ? parseInt(value) : 1});
+                }}
+                className="w-full appearance-none"
+                style={{ WebkitAppearance: 'none', MozAppearance: 'textfield' }}
               />
             </div>
             
@@ -954,23 +955,32 @@ export function FarmerPanel() {
               <div className="space-y-2">
                 <label className="text-sm font-medium">Quantity</label>
                 <Input
-                  type="number"
-                  min="1"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   placeholder="Enter quantity"
                   value={newProduct.quantity}
-                  onChange={(e) => setNewProduct({...newProduct, quantity: parseInt(e.target.value) || 1})}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/[^0-9]/g, '');
+                    setNewProduct({...newProduct, quantity: value ? parseInt(value) : 1});
+                  }}
+                  style={{ WebkitAppearance: 'none', MozAppearance: 'textfield' }}
                 />
               </div>
               
               <div className="space-y-2">
                 <label className="text-sm font-medium">Price (INR)</label>
                 <Input
-                  type="number"
-                  min="0.01"
-                  step="0.01"
+                  type="text"
+                  inputMode="decimal"
+                  pattern="[0-9]*\.?[0-9]*"
                   placeholder="Enter price in INR"
                   value={newProduct.price}
-                  onChange={(e) => setNewProduct({...newProduct, price: parseFloat(e.target.value) || 0})}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/[^0-9.]/g, '');
+                    setNewProduct({...newProduct, price: value ? parseFloat(value) : 0});
+                  }}
+                  style={{ WebkitAppearance: 'none', MozAppearance: 'textfield' }}
                 />
               </div>
             </div>
