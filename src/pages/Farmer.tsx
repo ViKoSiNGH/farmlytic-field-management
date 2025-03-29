@@ -6,10 +6,47 @@ import { useAuth } from '@/hooks/use-auth';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
+import { useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 const Farmer = () => {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
+  
+  // Initialize farmer settings if needed
+  useEffect(() => {
+    if (isAuthenticated && user?.role === 'farmer') {
+      // Check if farmer has any fields yet
+      const setupFarmerDefaults = async () => {
+        try {
+          const { data: fields, error } = await supabase
+            .from('fields')
+            .select('*')
+            .eq('user_id', user.id)
+            .limit(1);
+            
+          if (!error && (!fields || fields.length === 0)) {
+            // Offer to create demo fields
+            toast({
+              title: "Welcome to FarmLytic",
+              description: "Would you like to add fields to your farm to get started?",
+              action: (
+                <Button onClick={() => navigate('/fields')} variant="default" size="sm">
+                  Add Fields
+                </Button>
+              )
+            });
+          }
+        } catch (error) {
+          console.error('Error checking farmer setup:', error);
+        }
+      };
+      
+      setupFarmerDefaults();
+    }
+  }, [isAuthenticated, user, toast, navigate]);
   
   return (
     <Layout>

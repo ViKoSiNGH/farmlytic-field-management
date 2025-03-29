@@ -6,6 +6,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { v4 as uuidv4 } from 'uuid';
 
 const Specialist = () => {
   const { user, isAuthenticated } = useAuth();
@@ -31,10 +32,10 @@ const Specialist = () => {
 
         // Only create demo requests if none exist
         if (!existingRequests || existingRequests.length === 0) {
-          // Create 2 demo advice requests
+          // Use proper UUID format for demo farmers
           const demoRequests = [
             {
-              farmer_id: 'demo-farmer-1',
+              farmer_id: uuidv4(), // Generate real UUID for farmer_id
               type: 'advice',
               description: 'I have some tomato plants showing yellow leaves and spots. Could this be a fungal infection? What treatment would you recommend?',
               status: 'pending',
@@ -44,7 +45,7 @@ const Specialist = () => {
               created_at: new Date().toISOString()
             },
             {
-              farmer_id: 'demo-farmer-2',
+              farmer_id: uuidv4(), // Generate real UUID for farmer_id
               type: 'advice',
               description: 'My wheat field has uneven growth patterns. Some areas are growing well while others are stunted. Could this be a nutrient deficiency or soil problem?',
               status: 'pending',
@@ -74,7 +75,7 @@ const Specialist = () => {
 
     // Call the function to create demo requests
     createDemoRequests();
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user, toast]);
 
   return (
     <Layout>
