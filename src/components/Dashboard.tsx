@@ -5,9 +5,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   BarChart, CalendarRange, Tractor, Wheat, Droplets, LineChart, 
   TrendingUp, ShoppingBag, HelpCircle, PieChart, ArrowUpRight,
-  Seedling, Sun, CloudRain, Thermometer, Wind, Cloud, AlertCircle,
+  Sun, CloudRain, Thermometer, Wind, Cloud, AlertCircle,
   Leaf, Settings, Sprout
 } from 'lucide-react';
+import { SeedlingIcon } from '@/components/GardenIcon';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
@@ -305,7 +306,7 @@ export function Dashboard() {
                       <div className="space-y-2">
                         <div className="flex items-center text-xs text-muted-foreground">
                           <span className="bg-green-100 dark:bg-green-800/30 text-green-800 dark:text-green-300 p-1 rounded mr-2">
-                            <Seedling className="h-3 w-3" />
+                            <SeedlingIcon className="h-3 w-3" />
                           </span>
                           <span>Wheat crop planted in North Field</span>
                           <span className="ml-auto text-xs">2d ago</span>
