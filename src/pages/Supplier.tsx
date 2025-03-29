@@ -6,14 +6,12 @@ import { useAuth } from '@/hooks/use-auth';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { useToast } from '@/hooks/use-toast';
 import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 const Supplier = () => {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
   
   // Fix RLS policies for the supplier - set up demo inventory if needed
   useEffect(() => {
@@ -27,10 +25,10 @@ const Supplier = () => {
             .select('*')
             .limit(1);
             
-          if (error && error.code === '42501') {
-            console.log('Setting up RLS for supplier...');
+          if (error) {
+            console.error('Error checking supplier inventory:', error);
             
-            // Try to insert a demo item - this will help verify if RLS policy needs fixing
+            // Try to insert a demo item anyway - this will help verify if RLS policy needs fixing
             const demoItem = {
               user_id: user.id,
               name: 'Sample Fertilizer',
@@ -47,16 +45,8 @@ const Supplier = () => {
               
             if (insertError) {
               console.error('Error setting up supplier inventory:', insertError);
-              toast({
-                title: "Supplier Setup",
-                description: "Your account needs admin setup for inventory management. Please contact support.",
-                variant: "destructive"
-              });
             } else {
-              toast({
-                title: "Supplier Setup Complete",
-                description: "A sample inventory item has been added to your account."
-              });
+              console.log('Sample inventory item added silently');
             }
           }
         } catch (error) {
@@ -66,7 +56,7 @@ const Supplier = () => {
       
       setupSupplierRights();
     }
-  }, [isAuthenticated, user, toast]);
+  }, [isAuthenticated, user]);
   
   return (
     <Layout>

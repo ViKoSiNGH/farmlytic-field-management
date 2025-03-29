@@ -28,16 +28,12 @@ const Farmer = () => {
             .limit(1);
             
           if (!error && (!fields || fields.length === 0)) {
-            // Offer to create demo fields
-            toast({
-              title: "Welcome to FarmLytic",
-              description: "Would you like to add fields to your farm to get started?",
-              action: (
-                <Button onClick={() => navigate('/fields')} variant="default" size="sm">
-                  Add Fields
-                </Button>
-              )
-            });
+            // Offer to create demo fields but without the toast notification
+            // We'll just redirect to fields page if needed
+            if (window.location.pathname === '/farmer' && !sessionStorage.getItem('fields_prompted')) {
+              sessionStorage.setItem('fields_prompted', 'true');
+              navigate('/fields');
+            }
           }
         } catch (error) {
           console.error('Error checking farmer setup:', error);
@@ -46,7 +42,7 @@ const Farmer = () => {
       
       setupFarmerDefaults();
     }
-  }, [isAuthenticated, user, toast, navigate]);
+  }, [isAuthenticated, user, navigate]);
   
   return (
     <Layout>

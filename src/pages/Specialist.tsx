@@ -5,12 +5,10 @@ import { RolePanels } from '@/components/RolePanels';
 import { useAuth } from '@/hooks/use-auth';
 import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 import { v4 as uuidv4 } from 'uuid';
 
 const Specialist = () => {
   const { user, isAuthenticated } = useAuth();
-  const { toast } = useToast();
 
   useEffect(() => {
     // Create demo advice requests for testing if user is authenticated and a specialist
@@ -62,11 +60,9 @@ const Specialist = () => {
               console.error('Error creating demo request:', error);
             }
           }
-
-          toast({
-            title: "Demo Requests Created",
-            description: "Demo advice requests have been added for testing purposes."
-          });
+          
+          // We're not showing a toast notification here anymore
+          console.log('Demo requests created silently');
         }
       } catch (error) {
         console.error('Error setting up demo requests:', error);
@@ -75,7 +71,7 @@ const Specialist = () => {
 
     // Call the function to create demo requests
     createDemoRequests();
-  }, [isAuthenticated, user, toast]);
+  }, [isAuthenticated, user]);
 
   return (
     <Layout>
