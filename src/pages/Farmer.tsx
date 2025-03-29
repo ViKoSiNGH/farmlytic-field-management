@@ -15,7 +15,7 @@ const Farmer = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   
-  // Initialize farmer settings if needed
+  // Initialize farmer settings if needed - but without automatic prompts or redirects
   useEffect(() => {
     if (isAuthenticated && user?.role === 'farmer') {
       // Check if farmer has any fields yet
@@ -27,14 +27,8 @@ const Farmer = () => {
             .eq('user_id', user.id)
             .limit(1);
             
-          if (!error && (!fields || fields.length === 0)) {
-            // Offer to create demo fields but without the toast notification
-            // We'll just redirect to fields page if needed
-            if (window.location.pathname === '/farmer' && !sessionStorage.getItem('fields_prompted')) {
-              sessionStorage.setItem('fields_prompted', 'true');
-              navigate('/fields');
-            }
-          }
+          // No automatic redirects or toasts - just check if fields exist
+          console.log("Farmer has fields:", fields && fields.length > 0);
         } catch (error) {
           console.error('Error checking farmer setup:', error);
         }
@@ -42,7 +36,7 @@ const Farmer = () => {
       
       setupFarmerDefaults();
     }
-  }, [isAuthenticated, user, navigate]);
+  }, [isAuthenticated, user]);
   
   return (
     <Layout>

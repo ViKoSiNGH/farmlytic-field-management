@@ -23,25 +23,18 @@ const Index = () => {
           </div>
           
           <div className="rounded-lg overflow-hidden mb-6 relative">
-            <img 
-              src="/lovable-uploads/541c9c97-d08b-4a94-9405-16d7ecfd437a.png" 
-              alt="Agriculture Farm" 
-              className="w-full h-[400px] object-cover"
-              onError={(e) => {
-                // Fallback image if the uploaded one fails
-                e.currentTarget.src = "/lovable-uploads/b17c3e60-1feb-4d93-97d6-9d82335b2af4.png";
-              }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-col justify-end p-8 text-white">
-              <h2 className="text-3xl font-bold mb-2">Agriculture & Eco Farming</h2>
-              <p className="text-lg mb-4">Sustainable solutions for modern agriculture</p>
-              <Button 
-                onClick={() => navigate('/register')} 
-                className="w-fit bg-amber-500 hover:bg-amber-600 text-white"
-                size="lg"
-              >
-                Discover More
-              </Button>
+            <div className="bg-gradient-to-r from-green-800 to-green-600 h-[300px] w-full flex items-center justify-center">
+              <div className="text-center text-white p-8">
+                <h2 className="text-3xl font-bold mb-4">Agriculture & Eco Farming</h2>
+                <p className="text-lg mb-6">Sustainable solutions for modern agriculture</p>
+                <Button 
+                  onClick={() => navigate('/register')} 
+                  className="w-fit bg-amber-500 hover:bg-amber-600 text-white"
+                  size="lg"
+                >
+                  Discover More
+                </Button>
+              </div>
             </div>
           </div>
           

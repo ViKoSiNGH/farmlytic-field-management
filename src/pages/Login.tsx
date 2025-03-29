@@ -4,6 +4,7 @@ import { Layout } from '@/components/Layout';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { useAuth } from '@/hooks/use-auth';
 import { Navigate } from 'react-router-dom';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function Login() {
   const { isAuthenticated, user } = useAuth();
@@ -15,7 +16,9 @@ export default function Login() {
   
   return (
     <Layout className="flex items-center justify-center min-h-screen">
-      <LoginForm />
+      <ScrollArea className="max-h-screen w-full max-w-md">
+        <LoginForm />
+      </ScrollArea>
     </Layout>
   );
 }

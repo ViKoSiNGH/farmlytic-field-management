@@ -4,6 +4,7 @@ import { Layout } from '@/components/Layout';
 import { RegisterForm } from '@/components/auth/RegisterForm';
 import { useAuth } from '@/hooks/use-auth';
 import { Navigate } from 'react-router-dom';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function Register() {
   const { isAuthenticated, user } = useAuth();
@@ -15,7 +16,9 @@ export default function Register() {
   
   return (
     <Layout className="flex items-center justify-center min-h-screen">
-      <RegisterForm />
+      <ScrollArea className="max-h-screen w-full max-w-md">
+        <RegisterForm />
+      </ScrollArea>
     </Layout>
   );
 }

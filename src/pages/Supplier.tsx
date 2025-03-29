@@ -13,10 +13,10 @@ const Supplier = () => {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   
-  // Fix RLS policies for the supplier - set up demo inventory if needed
+  // Initialize supplier inventory silently without prompts
   useEffect(() => {
     if (isAuthenticated && user?.role === 'supplier') {
-      // Check for RLS issues and create demo inventory if new supplier
+      // Check for RLS issues and create demo inventory if new supplier - but without prompts
       const setupSupplierRights = async () => {
         try {
           // Try to fetch inventory to see if permissions are working
@@ -27,27 +27,8 @@ const Supplier = () => {
             
           if (error) {
             console.error('Error checking supplier inventory:', error);
-            
-            // Try to insert a demo item anyway - this will help verify if RLS policy needs fixing
-            const demoItem = {
-              user_id: user.id,
-              name: 'Sample Fertilizer',
-              type: 'Fertilizer',
-              quantity: 100,
-              unit: 'kg',
-              price: 25,
-              available: true
-            };
-            
-            const { error: insertError } = await supabase
-              .from('inventory')
-              .insert(demoItem);
-              
-            if (insertError) {
-              console.error('Error setting up supplier inventory:', insertError);
-            } else {
-              console.log('Sample inventory item added silently');
-            }
+          } else {
+            console.log("Supplier inventory check successful:", data?.length || 0, "items found");
           }
         } catch (error) {
           console.error('Error checking supplier rights:', error);
