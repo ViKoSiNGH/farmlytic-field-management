@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { InventoryItem, SupplierRequest } from '@/types/auth';
+import { InventoryItem, FarmerRequest } from '@/types/auth';
 import { ShoppingBag, Truck, MessageCircle, Phone, Mail, Send } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,7 +16,7 @@ export function SupplierPanel() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('inventory');
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
-  const [requests, setRequests] = useState<SupplierRequest[]>([]);
+  const [requests, setRequests] = useState<FarmerRequest[]>([]);
   const [newItem, setNewItem] = useState({
     name: '',
     type: 'fertilizer',
@@ -146,7 +146,7 @@ export function SupplierPanel() {
         const savedRequests = localStorage.getItem('farmlytic_supplier_requests');
         if (savedRequests) {
           try {
-            const parsedRequests: SupplierRequest[] = JSON.parse(savedRequests).map((req: any) => ({
+            const parsedRequests: FarmerRequest[] = JSON.parse(savedRequests).map((req: any) => ({
               ...req,
               createdAt: new Date(req.createdAt)
             }));
@@ -162,7 +162,7 @@ export function SupplierPanel() {
       }
       
       if (data) {
-        const formattedRequests: SupplierRequest[] = data.map(req => {
+        const formattedRequests: FarmerRequest[] = data.map(req => {
           const farmerName = req.farmer_name || 'Unknown Farmer';
           
           return {
@@ -224,7 +224,7 @@ export function SupplierPanel() {
     ];
   };
   
-  const getSampleRequests = (): SupplierRequest[] => {
+  const getSampleRequests = (): FarmerRequest[] => {
     return [
       {
         id: 'req1',
