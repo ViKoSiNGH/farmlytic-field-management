@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -29,7 +30,7 @@ export function FarmerPanel() {
     type: 'purchase',
     item: '',
     customItem: '',
-    quantity: 1,
+    quantity: undefined,
     description: '',
     targetId: '',
     contactPhone: user?.phone || '',
@@ -50,8 +51,8 @@ export function FarmerPanel() {
   }[]>([]);
   const [newProduct, setNewProduct] = useState({
     name: '',
-    quantity: 1,
-    price: 0,
+    quantity: undefined as number | undefined,
+    price: undefined as number | undefined,
     description: '',
   });
   const [chatMessages, setChatMessages] = useState<{
@@ -420,7 +421,7 @@ export function FarmerPanel() {
           farmer_id: user?.id,
           type: newRequest.type === 'custom' ? 'purchase' : newRequest.type,
           item: newRequest.type === 'custom' ? newRequest.customItem : newRequest.item,
-          quantity: newRequest.quantity,
+          quantity: newRequest.quantity || 0,
           description: newRequest.description,
           status: 'pending',
           target_id: targetId,
@@ -462,7 +463,7 @@ export function FarmerPanel() {
         type: 'purchase',
         item: '',
         customItem: '',
-        quantity: 1,
+        quantity: undefined,
         description: '',
         targetId: '',
         contactPhone: newRequest.contactPhone || '',
@@ -486,7 +487,7 @@ export function FarmerPanel() {
   };
   
   const handleAddSellerProduct = async () => {
-    if (!newProduct.name || newProduct.price <= 0) {
+    if (!newProduct.name || !newProduct.price) {
       toast({
         title: "Invalid Product Information",
         description: "Please provide a name and valid price for your product.",
@@ -500,7 +501,10 @@ export function FarmerPanel() {
         id: `prod-${Date.now()}`,
         sellerId: user?.id || 'farmer1',
         sellerName: user?.name || 'John Farmer',
-        ...newProduct,
+        name: newProduct.name,
+        quantity: newProduct.quantity || 0,
+        price: newProduct.price || 0,
+        description: newProduct.description,
       };
       
       const updatedProducts = [...sellerProducts, product];
@@ -509,8 +513,8 @@ export function FarmerPanel() {
       
       setNewProduct({
         name: '',
-        quantity: 1,
-        price: 0,
+        quantity: undefined,
+        price: undefined,
         description: '',
       });
       
@@ -615,17 +619,16 @@ export function FarmerPanel() {
             <div className="space-y-2">
               <label className="text-sm font-medium">Quantity</label>
               <Input
-                type="text"
+                type="number"
                 inputMode="numeric"
                 pattern="[0-9]*"
-                value={newRequest.quantity}
-                placeholder="Enter quantity needed"
+                placeholder="Enter quantity"
+                value={newRequest.quantity === undefined ? '' : newRequest.quantity}
                 onChange={(e) => {
-                  const value = e.target.value.replace(/[^0-9]/g, '');
-                  setNewRequest({...newRequest, quantity: value ? parseInt(value) : 1});
+                  const value = e.target.value.trim();
+                  const numericValue = value ? parseInt(value.replace(/[^0-9]/g, '')) : undefined;
+                  setNewRequest({...newRequest, quantity: numericValue});
                 }}
-                className="w-full appearance-none"
-                style={{ WebkitAppearance: 'none', MozAppearance: 'textfield' }}
               />
             </div>
             
@@ -955,32 +958,32 @@ export function FarmerPanel() {
               <div className="space-y-2">
                 <label className="text-sm font-medium">Quantity</label>
                 <Input
-                  type="text"
+                  type="number"
                   inputMode="numeric"
                   pattern="[0-9]*"
                   placeholder="Enter quantity"
-                  value={newProduct.quantity}
+                  value={newProduct.quantity === undefined ? '' : newProduct.quantity}
                   onChange={(e) => {
-                    const value = e.target.value.replace(/[^0-9]/g, '');
-                    setNewProduct({...newProduct, quantity: value ? parseInt(value) : 1});
+                    const value = e.target.value.trim();
+                    const numericValue = value ? parseInt(value.replace(/[^0-9]/g, '')) : undefined;
+                    setNewProduct({...newProduct, quantity: numericValue});
                   }}
-                  style={{ WebkitAppearance: 'none', MozAppearance: 'textfield' }}
                 />
               </div>
               
               <div className="space-y-2">
                 <label className="text-sm font-medium">Price (INR)</label>
                 <Input
-                  type="text"
+                  type="number"
                   inputMode="decimal"
                   pattern="[0-9]*\.?[0-9]*"
-                  placeholder="Enter price in INR"
-                  value={newProduct.price}
+                  placeholder="Enter price"
+                  value={newProduct.price === undefined ? '' : newProduct.price}
                   onChange={(e) => {
-                    const value = e.target.value.replace(/[^0-9.]/g, '');
-                    setNewProduct({...newProduct, price: value ? parseFloat(value) : 0});
+                    const value = e.target.value.trim();
+                    const numericValue = value ? parseFloat(value.replace(/[^0-9.]/g, '')) : undefined;
+                    setNewProduct({...newProduct, price: numericValue});
                   }}
-                  style={{ WebkitAppearance: 'none', MozAppearance: 'textfield' }}
                 />
               </div>
             </div>
