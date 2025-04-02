@@ -1,4 +1,4 @@
-import React, { useState, useEffect, FormEvent } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -32,7 +32,7 @@ export function SupplierPanel() {
       const { data, error } = await supabase
         .from('inventory')
         .select('*')
-        .eq('sellerId', user?.id)
+        .eq('user_id', user?.id)
         .order('name', { ascending: true });
       
       if (error) {
@@ -57,10 +57,22 @@ export function SupplierPanel() {
       }
       
       if (data) {
-        setInventory(data);
+        // Map Supabase data to InventoryItem structure
+        const mappedInventory: InventoryItem[] = data.map(item => ({
+          id: item.id,
+          type: item.type,
+          name: item.name,
+          quantity: item.quantity,
+          unit: item.unit,
+          price: item.price,
+          sellerId: item.user_id, // Map user_id to sellerId
+          available: item.available
+        }));
+        
+        setInventory(mappedInventory);
         
         // Also save to localStorage as fallback for development
-        localStorage.setItem('farmlytic_supplier_inventory', JSON.stringify(data));
+        localStorage.setItem('farmlytic_supplier_inventory', JSON.stringify(mappedInventory));
       }
     } catch (error) {
       console.error('Error in loadInventory:', error);
@@ -105,17 +117,20 @@ export function SupplierPanel() {
       if (data) {
         const formattedRequests: FarmerRequest[] = data.map((req: any) => {
           // Access the property using the database column name
-          const farmerName = req.farmer_id || 'Unknown Farmer'; // Use farmer_id as fallback if farmer_name is missing
+          const farmerName = req.farmer_name || req.farmer_id || 'Unknown Farmer'; // Use farmer_name or farmer_id as fallback
+          
+          // Ensure the status is one of the allowed values
+          const status = validateStatus(req.status);
           
           return {
             id: req.id,
             farmerId: req.farmer_id,
             farmerName: farmerName,
-            type: req.type,
+            type: req.type as 'purchase' | 'advice',
             item: req.item,
             quantity: req.quantity,
             description: req.description,
-            status: req.status,
+            status: status,
             createdAt: new Date(req.created_at),
             targetId: req.target_id,
             response: req.response,
@@ -137,73 +152,17 @@ export function SupplierPanel() {
     }
   };
 
+  // Helper function to validate status
+  const validateStatus = (status: string): 'pending' | 'accepted' | 'rejected' | 'completed' => {
+    const validStatuses: ('pending' | 'accepted' | 'rejected' | 'completed')[] = ['pending', 'accepted', 'rejected', 'completed'];
+    return validStatuses.includes(status as any) 
+      ? (status as 'pending' | 'accepted' | 'rejected' | 'completed') 
+      : 'pending';
+  };
+
   // Function to fetch requests from farmers
   const fetchRequests = async () => {
-    try {
-      // First try to fetch from Supabase
-      const { data, error } = await supabase
-        .from('requests')
-        .select('*')
-        .eq('type', 'purchase')
-        .order('created_at', { ascending: false });
-      
-      if (error) {
-        console.error('Error fetching requests:', error);
-        
-        // If Supabase fails, try loading from localStorage as a fallback
-        const savedRequests = localStorage.getItem('farmlytic_supplier_requests');
-        if (savedRequests) {
-          try {
-            const parsedRequests: FarmerRequest[] = JSON.parse(savedRequests).map((req: any) => ({
-              ...req,
-              createdAt: new Date(req.createdAt)
-            }));
-            setRequests(parsedRequests);
-          } catch (err) {
-            console.error('Error parsing saved requests:', err);
-            // If all else fails, use sample data
-            setRequests(getSampleRequests());
-          }
-        } else {
-          // If no saved data, use sample data
-          setRequests(getSampleRequests());
-        }
-        return;
-      }
-      
-      if (data) {
-        const formattedRequests: FarmerRequest[] = data.map((req: any) => {
-          // Access the property using the database column name
-          const farmerName = req.farmer_id || 'Unknown Farmer'; // Use farmer_id as fallback if farmer_name is missing
-          
-          return {
-            id: req.id,
-            farmerId: req.farmer_id,
-            farmerName: farmerName,
-            type: req.type,
-            item: req.item,
-            quantity: req.quantity,
-            description: req.description,
-            status: req.status,
-            createdAt: new Date(req.created_at),
-            targetId: req.target_id,
-            response: req.response,
-            contactPhone: req.contact_phone,
-            contactEmail: req.contact_email,
-            isCustom: req.is_custom
-          };
-        });
-        
-        setRequests(formattedRequests);
-        
-        // Also save to localStorage as fallback for development
-        localStorage.setItem('farmlytic_supplier_requests', JSON.stringify(formattedRequests));
-      }
-    } catch (error) {
-      console.error('Error in fetchRequests:', error);
-      // Use sample data if all else fails
-      setRequests(getSampleRequests());
-    }
+    await loadRequests(); // Reuse the existing loadRequests function
   };
 
   const handleUpdateStatus = async (requestId: string, newStatus: string) => {
@@ -225,7 +184,7 @@ export function SupplierPanel() {
   
       // Optimistically update the local state
       setRequests(requests.map(req =>
-        req.id === requestId ? { ...req, status: newStatus } : req
+        req.id === requestId ? { ...req, status: validateStatus(newStatus) } : req
       ));
   
       toast({

@@ -4,10 +4,10 @@ import { cn } from "@/lib/utils"
 
 const Input = React.forwardRef<HTMLInputElement, React.ComponentPropsWithoutRef<"input">>(
   ({ className, type, ...props }, ref) => {
-    // Default value for numeric inputs and style fixes
+    // Additional props for numeric inputs - removing default value behavior
     const additionalProps: React.InputHTMLAttributes<HTMLInputElement> = type === "number" 
       ? { 
-          defaultValue: props.defaultValue || "0",
+          // Remove default value behavior
           // Fix the style types by combining into a single React CSSProperties object 
           style: { 
             WebkitAppearance: "none", 
