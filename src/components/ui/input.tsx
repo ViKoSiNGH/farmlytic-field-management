@@ -1,9 +1,19 @@
+
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
+const Input = React.forwardRef<HTMLInputElement, React.ComponentPropsWithoutRef<"input">>(
   ({ className, type, ...props }, ref) => {
+    // Default value for numeric inputs
+    const inputProps = type === "number" 
+      ? { 
+          defaultValue: props.defaultValue || "0", 
+          className: cn("appearance-none", className),
+          style: { WebkitAppearance: "none", MozAppearance: "textfield" } // Removes spinner buttons
+        } 
+      : {};
+
     return (
       <input
         type={type}
@@ -12,6 +22,7 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
           className
         )}
         ref={ref}
+        {...inputProps}
         {...props}
       />
     )
