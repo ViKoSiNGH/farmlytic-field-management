@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { User, UserRole } from '@/types/auth';
@@ -14,6 +13,8 @@ interface AuthContextType {
   register: (name: string, email: string, password: string, role: UserRole) => Promise<boolean>;
   logout: () => void;
   getRole: () => UserRole | null;
+  updateUserProfile: (profileData: {name?: string; email?: string; phone?: string}) => Promise<void>;
+  updatePassword: (currentPassword: string, newPassword: string) => Promise<void>;
 }
 
 // Create the AuthContext
@@ -497,6 +498,91 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Update user profile function
+  const updateUserProfile = async (profileData: {name?: string; email?: string; phone?: string}) => {
+    if (!user) {
+      throw new Error("User not authenticated");
+    }
+
+    try {
+      setIsLoading(true);
+      
+      // Update the profile in Supabase
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          name: profileData.name || user.name,
+          email: profileData.email || user.email,
+          phone: profileData.phone || user.phone
+        })
+        .eq('id', user.id);
+      
+      if (error) {
+        throw error;
+      }
+      
+      // Update the local user state
+      setUser({
+        ...user,
+        name: profileData.name || user.name,
+        email: profileData.email || user.email,
+        phone: profileData.phone || user.phone
+      });
+      
+      // Also update localStorage
+      localStorage.setItem('farmlytic_user', JSON.stringify({
+        ...user,
+        name: profileData.name || user.name,
+        email: profileData.email || user.email,
+        phone: profileData.phone || user.phone
+      }));
+      
+      console.log('Profile updated successfully');
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Update password function
+  const updatePassword = async (currentPassword: string, newPassword: string) => {
+    if (!session?.user) {
+      throw new Error("User not authenticated");
+    }
+    
+    try {
+      setIsLoading(true);
+      
+      // First verify the current password is correct by trying to sign in
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user?.email || '',
+        password: currentPassword
+      });
+      
+      if (signInError) {
+        throw new Error("Current password is incorrect");
+      }
+      
+      // Update the password
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+      
+      if (error) {
+        throw error;
+      }
+      
+      console.log('Password updated successfully');
+    } catch (error) {
+      console.error('Error updating password:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const value = {
     user,
     isAuthenticated: !!user,
@@ -504,7 +590,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     login,
     register,
     logout,
-    getRole
+    getRole,
+    updateUserProfile,
+    updatePassword
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

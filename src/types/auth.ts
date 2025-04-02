@@ -26,6 +26,23 @@ export interface FarmerRequest {
   isCustom?: boolean;
 }
 
+export interface SupplierRequest {
+  id: string;
+  farmerId: string;
+  farmerName: string;
+  type: 'purchase' | 'advice';
+  item?: string;
+  quantity?: number;
+  description: string;
+  status: 'pending' | 'accepted' | 'rejected' | 'completed';
+  createdAt: Date;
+  targetId?: string;
+  response?: string;
+  contactPhone?: string;
+  contactEmail?: string;
+  isCustom?: boolean;
+}
+
 export interface Field {
   id: string;
   userId: string;

@@ -162,22 +162,26 @@ export function SupplierPanel() {
       }
       
       if (data) {
-        const formattedRequests: SupplierRequest[] = data.map(req => ({
-          id: req.id,
-          farmerId: req.farmer_id,
-          farmerName: req.farmer_name,
-          type: req.type as 'purchase' | 'advice',
-          item: req.item,
-          quantity: req.quantity,
-          description: req.description,
-          status: req.status as 'pending' | 'accepted' | 'rejected' | 'completed',
-          createdAt: new Date(req.created_at),
-          targetId: req.target_id,
-          response: req.response,
-          contactPhone: req.contact_phone,
-          contactEmail: req.contact_email,
-          isCustom: req.is_custom
-        }));
+        const formattedRequests: SupplierRequest[] = data.map(req => {
+          const farmerName = req.farmer_name || 'Unknown Farmer';
+          
+          return {
+            id: req.id,
+            farmerId: req.farmer_id,
+            farmerName: farmerName,
+            type: req.type as 'purchase' | 'advice',
+            item: req.item,
+            quantity: req.quantity,
+            description: req.description,
+            status: req.status as 'pending' | 'accepted' | 'rejected' | 'completed',
+            createdAt: new Date(req.created_at),
+            targetId: req.target_id,
+            response: req.response,
+            contactPhone: req.contact_phone,
+            contactEmail: req.contact_email,
+            isCustom: req.is_custom
+          };
+        });
         setRequests(formattedRequests);
       }
     } catch (error) {
@@ -253,7 +257,6 @@ export function SupplierPanel() {
   };
   
   const handleAddToInventory = async () => {
-    // Form validation
     if (!newItem.name || !newItem.type || !newItem.quantity || !newItem.unit) {
       toast({
         title: "Missing Information",
@@ -273,13 +276,11 @@ export function SupplierPanel() {
     }
     
     try {
-      // Show loading status
       toast({
         title: "Processing",
         description: "Adding item to inventory...",
       });
       
-      // Add item to Supabase
       const { data, error } = await supabase
         .from('inventory')
         .insert({
@@ -301,7 +302,6 @@ export function SupplierPanel() {
           variant: "destructive"
         });
         
-        // Fallback to local storage if database fails
         const itemId = `item-${Date.now()}`;
         const newInventoryItem: InventoryItem = {
           id: itemId,
@@ -317,7 +317,6 @@ export function SupplierPanel() {
         const updatedInventory = [...inventory, newInventoryItem];
         setInventory(updatedInventory);
         
-        // Store in local storage as fallback
         localStorage.setItem('farmlytic_inventory', JSON.stringify(updatedInventory));
         
         toast({
@@ -325,17 +324,14 @@ export function SupplierPanel() {
           description: "Item added to local inventory. Will sync when connection is restored.",
         });
       } else {
-        // Successfully added to database
         console.log('Inventory item added:', data);
-        fetchInventory(); // Refresh inventory list
-        
+        fetchInventory();
         toast({
           title: "Success",
           description: "Inventory item added successfully.",
         });
       }
       
-      // Reset form
       setNewItem({
         name: '',
         type: 'fertilizer',
