@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
@@ -61,9 +60,9 @@ export default function Crops() {
   const form = useForm<CropFormValues>({
     defaultValues: {
       name: '',
-      activeFields: 1,
-      totalHectares: 0,
-      growthProgress: 0,
+      activeFields: undefined,
+      totalHectares: undefined,
+      growthProgress: undefined,
       plantingDate: '',
       estimatedHarvest: '',
       task1: '',
@@ -190,9 +189,9 @@ export default function Crops() {
     const newCrop = {
       id: `crop-${Date.now()}`,
       name: data.name,
-      activeFields: data.activeFields,
-      totalHectares: data.totalHectares,
-      growthProgress: data.growthProgress,
+      activeFields: Number(data.activeFields) || 0,
+      totalHectares: Number(data.totalHectares) || 0,
+      growthProgress: Number(data.growthProgress) || 0,
       plantingDate: data.plantingDate,
       estimatedHarvest: data.estimatedHarvest,
       tasks: tasks
@@ -355,9 +354,13 @@ export default function Crops() {
                             <FormControl>
                               <Input 
                                 type="number" 
-                                placeholder="1" 
+                                placeholder="Enter number" 
                                 {...field} 
-                                onChange={e => field.onChange(parseInt(e.target.value) || 1)} 
+                                onChange={e => {
+                                  const value = e.target.value ? parseInt(e.target.value) : undefined;
+                                  field.onChange(value);
+                                }}
+                                value={field.value === undefined ? '' : field.value}
                                 required 
                               />
                             </FormControl>
@@ -375,9 +378,13 @@ export default function Crops() {
                             <FormControl>
                               <Input 
                                 type="number" 
-                                placeholder="10.5" 
+                                placeholder="Enter hectares" 
                                 {...field} 
-                                onChange={e => field.onChange(parseFloat(e.target.value) || 0)} 
+                                onChange={e => {
+                                  const value = e.target.value ? parseFloat(e.target.value) : undefined;
+                                  field.onChange(value);
+                                }}
+                                value={field.value === undefined ? '' : field.value}
                                 required 
                               />
                             </FormControl>
@@ -396,9 +403,13 @@ export default function Crops() {
                           <FormControl>
                             <Input 
                               type="number" 
-                              placeholder="50" 
+                              placeholder="Enter percentage" 
                               {...field} 
-                              onChange={e => field.onChange(parseInt(e.target.value) || 0)} 
+                              onChange={e => {
+                                const value = e.target.value ? parseInt(e.target.value) : undefined;
+                                field.onChange(value);
+                              }}
+                              value={field.value === undefined ? '' : field.value}
                               required 
                             />
                           </FormControl>

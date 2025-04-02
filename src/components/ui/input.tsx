@@ -8,6 +8,7 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentPropsWithoutRef<
     const additionalProps: React.InputHTMLAttributes<HTMLInputElement> = type === "number" 
       ? { 
           // Remove default value behavior
+          placeholder: " ",  // Use empty space to prevent browsers from showing 0
           // Fix the style types by combining into a single React CSSProperties object 
           style: { 
             WebkitAppearance: "none", 
