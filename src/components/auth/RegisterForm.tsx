@@ -80,7 +80,7 @@ export function RegisterForm() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-md space-y-6 p-4 sm:p-8 glass-card rounded-lg">
+    <div className="mx-auto w-full max-w-md space-y-6 p-4 sm:px-6 glass-card rounded-lg">
       <div className="space-y-2 text-center">
         <h1 className="text-2xl sm:text-3xl font-bold">Create an Account</h1>
         <p className="text-sm sm:text-base text-muted-foreground">Register to access FarmLytic</p>
@@ -99,17 +99,16 @@ export function RegisterForm() {
             name="name"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-sm sm:text-base">Full Name</FormLabel>
+                <FormLabel>Full Name</FormLabel>
                 <FormControl>
                   <Input 
                     placeholder="Enter your name" 
                     required 
                     disabled={isSubmitting}
-                    className="text-base sm:text-sm"
                     {...field}
                   />
                 </FormControl>
-                <FormMessage className="text-xs sm:text-sm" />
+                <FormMessage />
               </FormItem>
             )}
           />
@@ -119,18 +118,17 @@ export function RegisterForm() {
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-sm sm:text-base">Email</FormLabel>
+                <FormLabel>Email</FormLabel>
                 <FormControl>
                   <Input 
                     placeholder="Enter your email" 
                     type="email" 
                     required 
                     disabled={isSubmitting}
-                    className="text-base sm:text-sm"
                     {...field}
                   />
                 </FormControl>
-                <FormMessage className="text-xs sm:text-sm" />
+                <FormMessage />
               </FormItem>
             )}
           />
@@ -140,18 +138,17 @@ export function RegisterForm() {
             name="password"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-sm sm:text-base">Password</FormLabel>
+                <FormLabel>Password</FormLabel>
                 <FormControl>
                   <Input 
                     placeholder="Create a password" 
                     type="password" 
                     required 
                     disabled={isSubmitting}
-                    className="text-base sm:text-sm"
                     {...field}
                   />
                 </FormControl>
-                <FormMessage className="text-xs sm:text-sm" />
+                <FormMessage />
               </FormItem>
             )}
           />
@@ -161,18 +158,17 @@ export function RegisterForm() {
             name="confirmPassword"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-sm sm:text-base">Confirm Password</FormLabel>
+                <FormLabel>Confirm Password</FormLabel>
                 <FormControl>
                   <Input 
                     placeholder="Confirm your password" 
                     type="password" 
                     required 
                     disabled={isSubmitting}
-                    className="text-base sm:text-sm"
                     {...field}
                   />
                 </FormControl>
-                <FormMessage className="text-xs sm:text-sm" />
+                <FormMessage />
               </FormItem>
             )}
           />
@@ -182,7 +178,7 @@ export function RegisterForm() {
             name="role"
             render={({ field }) => (
               <FormItem className="space-y-3">
-                <FormLabel className="text-sm sm:text-base">Role</FormLabel>
+                <FormLabel>Role</FormLabel>
                 <FormControl>
                   <RadioGroup
                     onValueChange={field.onChange}
@@ -193,30 +189,30 @@ export function RegisterForm() {
                       <FormControl>
                         <RadioGroupItem value="farmer" />
                       </FormControl>
-                      <FormLabel className="font-normal text-sm sm:text-base">Farmer</FormLabel>
+                      <FormLabel className="font-normal">Farmer</FormLabel>
                     </FormItem>
                     <FormItem className="flex items-center space-x-3 space-y-0">
                       <FormControl>
                         <RadioGroupItem value="supplier" />
                       </FormControl>
-                      <FormLabel className="font-normal text-sm sm:text-base">Supplier</FormLabel>
+                      <FormLabel className="font-normal">Supplier</FormLabel>
                     </FormItem>
                     <FormItem className="flex items-center space-x-3 space-y-0">
                       <FormControl>
                         <RadioGroupItem value="specialist" />
                       </FormControl>
-                      <FormLabel className="font-normal text-sm sm:text-base">Agriculture Specialist</FormLabel>
+                      <FormLabel className="font-normal">Agriculture Specialist</FormLabel>
                     </FormItem>
                   </RadioGroup>
                 </FormControl>
-                <FormMessage className="text-xs sm:text-sm" />
+                <FormMessage />
               </FormItem>
             )}
           />
           
           <Button 
             type="submit" 
-            className="w-full text-sm sm:text-base py-5 sm:py-4" 
+            className="w-full py-5 sm:py-4" 
             disabled={isSubmitting}
           >
             {isSubmitting ? (
@@ -232,7 +228,7 @@ export function RegisterForm() {
       </Form>
       
       <div className="text-center">
-        <p className="text-xs sm:text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground">
           Already have an account?{' '}
           <Link to="/login" className="underline text-primary hover:text-primary/90">
             Login

@@ -70,7 +70,7 @@ export function LoginForm() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-md space-y-6 p-4 sm:p-8 glass-card rounded-lg">
+    <div className="mx-auto w-full max-w-md space-y-6 p-4 sm:px-6 glass-card rounded-lg">
       <div className="space-y-2 text-center">
         <h1 className="text-2xl sm:text-3xl font-bold">Login to FarmLytic</h1>
         <p className="text-sm sm:text-base text-muted-foreground">Enter your credentials to access your account</p>
@@ -89,7 +89,7 @@ export function LoginForm() {
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-sm sm:text-base">Email</FormLabel>
+                <FormLabel>Email</FormLabel>
                 <FormControl>
                   <Input 
                     placeholder="Enter your email" 
@@ -97,11 +97,10 @@ export function LoginForm() {
                     required 
                     disabled={isSubmitting}
                     autoComplete="email"
-                    className="text-base sm:text-sm"
                     {...field}
                   />
                 </FormControl>
-                <FormMessage className="text-xs sm:text-sm" />
+                <FormMessage />
               </FormItem>
             )}
           />
@@ -111,7 +110,7 @@ export function LoginForm() {
             name="password"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-sm sm:text-base">Password</FormLabel>
+                <FormLabel>Password</FormLabel>
                 <FormControl>
                   <Input 
                     placeholder="Enter your password" 
@@ -119,18 +118,17 @@ export function LoginForm() {
                     required 
                     disabled={isSubmitting}
                     autoComplete="current-password"
-                    className="text-base sm:text-sm"
                     {...field}
                   />
                 </FormControl>
-                <FormMessage className="text-xs sm:text-sm" />
+                <FormMessage />
               </FormItem>
             )}
           />
           
           <Button 
             type="submit" 
-            className="w-full text-sm sm:text-base py-5 sm:py-4" 
+            className="w-full py-5 sm:py-4" 
             disabled={isSubmitting}
           >
             {isSubmitting ? (
@@ -146,7 +144,7 @@ export function LoginForm() {
       </Form>
       
       <div className="text-center">
-        <p className="text-xs sm:text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground">
           Don't have an account?{' '}
           <Link to="/register" className="underline text-primary hover:text-primary/90">
             Register

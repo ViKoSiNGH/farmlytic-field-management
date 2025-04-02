@@ -15,9 +15,11 @@ export default function Register() {
   }
   
   return (
-    <Layout className="flex items-center justify-center min-h-screen">
-      <ScrollArea className="max-h-screen w-full max-w-md">
-        <RegisterForm />
+    <Layout className="flex items-center justify-center min-h-screen py-6">
+      <ScrollArea className="h-[calc(100vh-120px)] w-full max-w-md px-4">
+        <div className="py-4">
+          <RegisterForm />
+        </div>
       </ScrollArea>
     </Layout>
   );
