@@ -9,11 +9,8 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentPropsWithoutRef<
       ? { 
           // Remove default value behavior
           placeholder: " ",  // Use empty space to prevent browsers from showing 0
-          // Fix the style types by using string literals for vendor prefixes
+          // Fix the style types by using valid CSS properties
           style: { 
-            WebkitAppearance: "none", 
-            MozAppearance: "textfield",
-            // Use a valid approach to hide spinner buttons
             appearance: "textfield"
           } 
         } 
