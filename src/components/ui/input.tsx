@@ -12,7 +12,10 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentPropsWithoutRef<
           // Fix the style types by combining into a single React CSSProperties object 
           style: { 
             WebkitAppearance: "none", 
-            MozAppearance: "textfield" 
+            MozAppearance: "textfield",
+            // Remove spinner buttons
+            WebkitInnerSpinButton: "none",
+            MozAppearanceSpinners: "none"
           } 
         } 
       : {};
