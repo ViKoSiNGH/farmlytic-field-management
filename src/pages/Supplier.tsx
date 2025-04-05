@@ -11,29 +11,42 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
 const Supplier = () => {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
   const [isChecking, setIsChecking] = useState(true);
   
   // Initialize supplier inventory and check permissions
   useEffect(() => {
+    // Don't do anything if authentication is still loading
+    if (isLoading) {
+      return;
+    }
+    
     if (isAuthenticated && user?.role === 'supplier') {
       // Check for RLS issues and create demo inventory if new supplier
       const setupSupplierRights = async () => {
         setIsChecking(true);
         try {
           // Ensure user is authenticated with Supabase
-          const { data: session } = await supabase.auth.getSession();
+          const { data: { session } } = await supabase.auth.getSession();
           console.log("Auth session status:", session?.session ? "Active" : "None");
           
           if (!session?.session) {
             console.log("No active session found");
-            toast({
-              title: "Authentication Required",
-              description: "Please log in again to manage your inventory.",
-              variant: "destructive",
-            });
-            return;
+            
+            // Try to refresh the session
+            const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+            if (refreshError) {
+              console.error("Failed to refresh session:", refreshError);
+              toast({
+                title: "Authentication Required",
+                description: "Please log in again to manage your inventory.",
+                variant: "destructive",
+              });
+              return;
+            } else if (refreshData.session) {
+              console.log("Session refreshed successfully");
+            }
           }
 
           if (user?.id) {
@@ -67,7 +80,19 @@ const Supplier = () => {
     } else {
       setIsChecking(false);
     }
-  }, [isAuthenticated, user, toast]);
+  }, [isAuthenticated, user, isLoading, toast]);
+  
+  // If still loading auth state, show a loading indicator
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="container mx-auto py-6 text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-2 text-muted-foreground">Loading authentication status...</p>
+        </div>
+      </Layout>
+    );
+  }
   
   return (
     <Layout>

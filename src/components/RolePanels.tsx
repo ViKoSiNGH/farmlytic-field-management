@@ -14,8 +14,18 @@ interface RolePanelsProps {
 }
 
 export function RolePanels({ role }: RolePanelsProps) {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
+  
+  // If still loading auth state, show a loading indicator
+  if (isLoading) {
+    return (
+      <div className="w-full text-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+        <p className="text-muted-foreground">Checking authentication...</p>
+      </div>
+    );
+  }
   
   // Check if the current user's role matches the expected role for this page
   const isCorrectRole = user?.role === role;

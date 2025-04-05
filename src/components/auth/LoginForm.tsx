@@ -47,7 +47,11 @@ export function LoginForm() {
           title: "Login Successful",
           description: "Welcome back!",
         });
-        navigate('/');
+        
+        // Get user role and redirect to appropriate dashboard
+        const { data } = await useAuth();
+        const role = data?.user?.role || 'farmer';
+        navigate(`/${role}`);
       } else {
         setAuthError("Invalid email or password. Please try again.");
         toast({
