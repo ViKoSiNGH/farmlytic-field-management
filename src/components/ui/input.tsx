@@ -4,12 +4,11 @@ import { cn } from "@/lib/utils"
 
 const Input = React.forwardRef<HTMLInputElement, React.ComponentPropsWithoutRef<"input">>(
   ({ className, type, ...props }, ref) => {
-    // Additional props for numeric inputs - removing default value behavior
+    // Additional props for numeric inputs
     const additionalProps: React.InputHTMLAttributes<HTMLInputElement> = type === "number" 
       ? { 
           // Remove default value behavior
           placeholder: " ",  // Use empty space to prevent browsers from showing 0
-          // Fix the style types by using valid CSS properties
           style: { 
             appearance: "textfield"
           } 

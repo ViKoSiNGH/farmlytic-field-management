@@ -6,51 +6,82 @@ import { useAuth } from '@/hooks/use-auth';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 
 const Supplier = () => {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const [isChecking, setIsChecking] = useState(true);
   
-  // Initialize supplier inventory silently without prompts
+  // Initialize supplier inventory and check permissions
   useEffect(() => {
     if (isAuthenticated && user?.role === 'supplier') {
-      // Check for RLS issues and create demo inventory if new supplier - but without prompts
+      // Check for RLS issues and create demo inventory if new supplier
       const setupSupplierRights = async () => {
+        setIsChecking(true);
         try {
-          // Try to fetch inventory to see if permissions are working
-          const { data, error } = await supabase
-            .from('inventory')
-            .select('*')
-            .limit(1);
+          // Ensure user is authenticated with Supabase
+          const { data: session } = await supabase.auth.getSession();
+          console.log("Auth session status:", session?.session ? "Active" : "None");
+          
+          if (!session?.session) {
+            console.log("No active session found");
+            toast({
+              title: "Authentication Required",
+              description: "Please log in again to manage your inventory.",
+              variant: "destructive",
+            });
+            return;
+          }
+
+          if (user?.id) {
+            console.log("Current user ID:", user.id);
             
-          if (error) {
-            console.error('Error checking supplier inventory:', error);
-          } else {
-            console.log("Supplier inventory check successful:", data?.length || 0, "items found");
-            
-            // Check if user is connected to Supabase auth
-            const { data: session } = await supabase.auth.getSession();
-            console.log("Auth session status:", session?.session ? "Active" : "None");
-            if (user?.id) {
-              console.log("Current user ID:", user.id);
+            // Try to fetch inventory to see if permissions are working
+            const { data, error } = await supabase
+              .from('inventory')
+              .select('*')
+              .limit(1);
+              
+            if (error) {
+              console.error('Error checking supplier inventory:', error);
+              toast({
+                title: "Database Access Error",
+                description: "Unable to access inventory. Please refresh or contact support.",
+                variant: "destructive",
+              });
+            } else {
+              console.log("Supplier inventory check successful:", data?.length || 0, "items found");
             }
           }
         } catch (error) {
           console.error('Error checking supplier rights:', error);
+        } finally {
+          setIsChecking(false);
         }
       };
       
       setupSupplierRights();
+    } else {
+      setIsChecking(false);
     }
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user, toast]);
   
   return (
     <Layout>
       <div className="container mx-auto py-6">
         <h1 className="text-3xl font-bold mb-6">Supplier Dashboard</h1>
-        <RolePanels role="supplier" />
+        
+        {isChecking ? (
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Checking permissions...</p>
+          </div>
+        ) : (
+          <RolePanels role="supplier" />
+        )}
         
         {!isAuthenticated && (
           <Card className="mt-8">
