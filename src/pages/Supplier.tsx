@@ -29,6 +29,13 @@ const Supplier = () => {
             console.error('Error checking supplier inventory:', error);
           } else {
             console.log("Supplier inventory check successful:", data?.length || 0, "items found");
+            
+            // Check if user is connected to Supabase auth
+            const { data: session } = await supabase.auth.getSession();
+            console.log("Auth session status:", session?.session ? "Active" : "None");
+            if (user?.id) {
+              console.log("Current user ID:", user.id);
+            }
           }
         } catch (error) {
           console.error('Error checking supplier rights:', error);

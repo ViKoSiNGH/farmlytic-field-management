@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
@@ -45,7 +44,6 @@ export function SupplierPanel() {
 
   const loadInventory = async () => {
     try {
-      // First try to fetch from Supabase
       const { data, error } = await supabase
         .from('inventory')
         .select('*')
@@ -55,7 +53,6 @@ export function SupplierPanel() {
       if (error) {
         console.error('Error fetching inventory:', error);
         
-        // If Supabase fails, try loading from localStorage as a fallback
         const savedInventory = localStorage.getItem('farmlytic_supplier_inventory');
         if (savedInventory) {
           try {
@@ -63,18 +60,15 @@ export function SupplierPanel() {
             setInventory(parsedInventory);
           } catch (err) {
             console.error('Error parsing saved inventory:', err);
-            // If all else fails, use sample data
             setInventory(getInventorySamples());
           }
         } else {
-          // If no saved data, use sample data
           setInventory(getInventorySamples());
         }
         return;
       }
       
       if (data) {
-        // Map Supabase data to InventoryItem structure
         const mappedInventory: InventoryItem[] = data.map(item => ({
           id: item.id,
           type: item.type,
@@ -82,25 +76,21 @@ export function SupplierPanel() {
           quantity: item.quantity,
           unit: item.unit,
           price: item.price || 0,
-          sellerId: item.user_id, // Map user_id to sellerId
+          sellerId: item.user_id,
           available: item.available
         }));
         
         setInventory(mappedInventory);
-        
-        // Also save to localStorage as fallback for development
         localStorage.setItem('farmlytic_supplier_inventory', JSON.stringify(mappedInventory));
       }
     } catch (error) {
       console.error('Error in loadInventory:', error);
-      // Use sample data if all else fails
       setInventory(getInventorySamples());
     }
   };
   
   const loadRequests = async () => {
     try {
-      // First try to fetch from Supabase
       const { data, error } = await supabase
         .from('requests')
         .select('*')
@@ -110,8 +100,7 @@ export function SupplierPanel() {
       if (error) {
         console.error('Error fetching requests:', error);
         
-        // If Supabase fails, try loading from localStorage as a fallback
-        const savedRequests = localStorage.getItem('farmlytic_supplier_requests');
+        const savedRequests = localStorage.getItem('farmlylytic_supplier_requests');
         if (savedRequests) {
           try {
             const parsedRequests: FarmerRequest[] = JSON.parse(savedRequests).map((req: any) => ({
@@ -121,11 +110,9 @@ export function SupplierPanel() {
             setRequests(parsedRequests);
           } catch (err) {
             console.error('Error parsing saved requests:', err);
-            // If all else fails, use sample data
             setRequests(getSampleRequests());
           }
         } else {
-          // If no saved data, use sample data
           setRequests(getSampleRequests());
         }
         return;
@@ -133,12 +120,8 @@ export function SupplierPanel() {
       
       if (data) {
         const formattedRequests: FarmerRequest[] = data.map((req: any) => {
-          // Access the property using the database column name
-          const farmerName = req.farmer_name || req.farmer_id || 'Unknown Farmer'; // Use farmer_name or farmer_id as fallback
-          
-          // Ensure the status is one of the allowed values
+          const farmerName = req.farmer_name || req.farmer_id || 'Unknown Farmer';
           const status = validateStatus(req.status);
-          
           return {
             id: req.id,
             farmerId: req.farmer_id,
@@ -158,18 +141,14 @@ export function SupplierPanel() {
         });
         
         setRequests(formattedRequests);
-        
-        // Also save to localStorage as fallback for development
         localStorage.setItem('farmlytic_supplier_requests', JSON.stringify(formattedRequests));
       }
     } catch (error) {
       console.error('Error in loadRequests:', error);
-      // Use sample data if all else fails
       setRequests(getSampleRequests());
     }
   };
 
-  // Helper function to validate status
   const validateStatus = (status: string): 'pending' | 'accepted' | 'rejected' | 'completed' => {
     const validStatuses: ('pending' | 'accepted' | 'rejected' | 'completed')[] = ['pending', 'accepted', 'rejected', 'completed'];
     return validStatuses.includes(status as any) 
@@ -177,9 +156,8 @@ export function SupplierPanel() {
       : 'pending';
   };
 
-  // Function to fetch requests from farmers
   const fetchRequests = async () => {
-    await loadRequests(); // Reuse the existing loadRequests function
+    await loadRequests();
   };
 
   const handleUpdateStatus = async (requestId: string, newStatus: string) => {
@@ -199,7 +177,6 @@ export function SupplierPanel() {
         return;
       }
   
-      // Optimistically update the local state
       setRequests(requests.map(req =>
         req.id === requestId ? { ...req, status: validateStatus(newStatus) } : req
       ));
@@ -285,12 +262,21 @@ export function SupplierPanel() {
       isCustom: false,
     },
   ]);
-  
+
   const handleAddInventory = async () => {
     if (!newItem.name || !newItem.type || !newItem.unit) {
       toast({
         title: "Missing Information",
         description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!user || !user.id) {
+      toast({
+        title: "Authentication Required",
+        description: "You must be logged in to add inventory items.",
         variant: "destructive",
       });
       return;
@@ -304,8 +290,10 @@ export function SupplierPanel() {
         unit: newItem.unit,
         price: newItem.price || 0,
         available: newItem.available,
-        user_id: user?.id
+        user_id: user.id
       };
+      
+      console.log("Adding inventory item with user_id:", user.id);
       
       const { data, error } = await supabase
         .from('inventory')
@@ -313,6 +301,7 @@ export function SupplierPanel() {
         .select();
         
       if (error) {
+        console.error('Error details:', error);
         throw error;
       }
       
@@ -321,7 +310,6 @@ export function SupplierPanel() {
         description: "Inventory item added successfully!",
       });
       
-      // Reset form and refresh inventory
       setNewItem(initialInventoryFormValues);
       setIsAddingItem(false);
       loadInventory();
@@ -334,11 +322,20 @@ export function SupplierPanel() {
       });
     }
   };
-  
+
   const handleUpdateInventory = async (itemId: string) => {
     try {
       const itemToUpdate = inventory.find(item => item.id === itemId);
       if (!itemToUpdate) return;
+      
+      if (!user || !user.id) {
+        toast({
+          title: "Authentication Required",
+          description: "You must be logged in to update inventory items.",
+          variant: "destructive",
+        });
+        return;
+      }
       
       const { error } = await supabase
         .from('inventory')
@@ -348,11 +345,13 @@ export function SupplierPanel() {
           quantity: itemToUpdate.quantity,
           unit: itemToUpdate.unit,
           price: itemToUpdate.price,
-          available: itemToUpdate.available
+          available: itemToUpdate.available,
+          user_id: user.id
         })
         .eq('id', itemId);
         
       if (error) {
+        console.error('Error details:', error);
         throw error;
       }
       
@@ -372,7 +371,7 @@ export function SupplierPanel() {
       });
     }
   };
-  
+
   const handleDeleteInventory = async (itemId: string) => {
     try {
       const { error } = await supabase
@@ -389,7 +388,6 @@ export function SupplierPanel() {
         description: "Inventory item deleted successfully!",
       });
       
-      // Update local state
       setInventory(inventory.filter(item => item.id !== itemId));
     } catch (error) {
       console.error('Error deleting inventory item:', error);
@@ -400,16 +398,16 @@ export function SupplierPanel() {
       });
     }
   };
-  
+
   const startEditItem = (item: InventoryItem) => {
     setEditingItemId(item.id);
   };
-  
+
   const cancelEdit = () => {
     setEditingItemId(null);
-    loadInventory(); // Reload to discard changes
+    loadInventory();
   };
-  
+
   const updateItemField = (itemId: string, field: string, value: any) => {
     setInventory(inventory.map(item => 
       item.id === itemId 
