@@ -7,9 +7,10 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
 import * as z from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -24,6 +25,7 @@ export function LoginForm() {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [isEmailNotConfirmed, setIsEmailNotConfirmed] = useState(false);
   
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -37,10 +39,12 @@ export function LoginForm() {
     try {
       setIsSubmitting(true);
       setAuthError(null);
+      setIsEmailNotConfirmed(false);
+      
       const { email, password } = data;
       console.log("Attempting login with:", email);
       
-      const success = await login(email, password);
+      const { success, errorCode, errorMessage } = await login(email, password);
       
       if (success) {
         toast({
@@ -52,12 +56,18 @@ export function LoginForm() {
         const role = getRole() || 'farmer';
         navigate(`/${role}`);
       } else {
-        setAuthError("Invalid email or password. Please try again.");
-        toast({
-          title: "Login Failed",
-          description: "Invalid email or password. Please try again.",
-          variant: "destructive",
-        });
+        // Check if the error is related to email confirmation
+        if (errorCode === 'email_not_confirmed') {
+          setIsEmailNotConfirmed(true);
+          setAuthError("Your email address has not been confirmed. Please check your inbox for a verification email.");
+        } else {
+          setAuthError(errorMessage || "Invalid email or password. Please try again.");
+          toast({
+            title: "Login Failed",
+            description: errorMessage || "Invalid email or password. Please try again.",
+            variant: "destructive",
+          });
+        }
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -80,9 +90,19 @@ export function LoginForm() {
       </div>
       
       {authError && (
-        <div className="p-3 rounded-md bg-destructive/10 text-destructive text-sm">
-          {authError}
-        </div>
+        <Alert variant={isEmailNotConfirmed ? "default" : "destructive"} className="text-sm">
+          <AlertCircle className="h-4 w-4 mr-2" />
+          <AlertDescription>
+            {authError}
+            {isEmailNotConfirmed && (
+              <div className="mt-2">
+                <Button variant="outline" size="sm" className="text-xs" onClick={() => form.handleSubmit(onSubmit)()}>
+                  Resend verification email
+                </Button>
+              </div>
+            )}
+          </AlertDescription>
+        </Alert>
       )}
       
       <Form {...form}>

@@ -4,12 +4,15 @@ import { User, UserRole } from '@/types/auth';
 import { supabase } from '@/integrations/supabase/client';
 import { Session } from '@supabase/supabase-js';
 
-// Define the AuthContext type
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<{
+    success: boolean;
+    errorCode?: string;
+    errorMessage?: string;
+  }>;
   register: (name: string, email: string, password: string, role: UserRole) => Promise<boolean>;
   logout: () => void;
   getRole: () => UserRole | null;
@@ -17,21 +20,17 @@ interface AuthContextType {
   updatePassword: (currentPassword: string, newPassword: string) => Promise<void>;
 }
 
-// Create the AuthContext
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// AuthProvider component
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
-  // Initialize auth state
   useEffect(() => {
     let mounted = true;
     
-    // Set up auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, currentSession) => {
         console.log('Auth state changed:', event, currentSession);
@@ -41,7 +40,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(currentSession);
         
         if (currentSession?.user) {
-          // Use setTimeout to prevent potential Supabase deadlock
           setTimeout(() => {
             fetchUserProfile(currentSession.user.id);
           }, 0);
@@ -52,7 +50,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     );
 
-    // Then check for existing session
     const initSession = async () => {
       try {
         const { data: { session: currentSession } } = await supabase.auth.getSession();
@@ -63,12 +60,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(currentSession);
         
         if (currentSession?.user) {
-          // Fetch the user's profile from Supabase with a small delay
           setTimeout(() => {
             fetchUserProfile(currentSession.user.id);
           }, 100);
         } else {
-          // Check if we have a locally saved user for development
           const savedUser = localStorage.getItem('farmlytic_user');
           if (savedUser) {
             try {
@@ -95,7 +90,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // Function to fetch user profile from Supabase
   const fetchUserProfile = async (userId: string) => {
     try {
       console.log('Fetching user profile for:', userId);
@@ -121,13 +115,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           phone: data.phone || undefined
         };
         setUser(userProfile);
-        // Also save to localStorage as fallback for development
         localStorage.setItem('farmlytic_user', JSON.stringify(userProfile));
         console.log('User profile loaded:', userProfile);
       } else {
         console.log('No profile found for user ID:', userId);
         
-        // If no profile exists yet, try to get basic info from auth
         if (session?.user) {
           const authUser = session.user;
           const userProfile: User = {
@@ -137,11 +129,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             role: (authUser.user_metadata?.role as UserRole) || 'farmer',
           };
           setUser(userProfile);
-          // Also save to localStorage as fallback for development
           localStorage.setItem('farmlytic_user', JSON.stringify(userProfile));
           console.log('Created basic profile from auth data:', userProfile);
           
-          // Try to create the profile in the database
           try {
             const { error: insertError } = await supabase
               .from('profiles')
@@ -169,18 +159,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Get user role
   const getRole = (): UserRole | null => {
     return user ? user.role : null;
   };
 
-  // Login function
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string): Promise<{
+    success: boolean;
+    errorCode?: string;
+    errorMessage?: string;
+  }> => {
     setIsLoading(true);
     try {
       console.log(`Attempting login for ${email} with Supabase...`);
       
-      // First try Supabase login
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -189,21 +180,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error) {
         console.error('Supabase login error:', error.message);
         
-        // Check if error is related to email confirmation
         if (error.message.includes('Email not confirmed')) {
-          toast({
-            title: "Email Not Confirmed",
-            description: "Please check your email inbox to confirm your account before logging in.",
-            variant: "destructive",
-          });
           setIsLoading(false);
-          return false;
+          return {
+            success: false,
+            errorCode: 'email_not_confirmed',
+            errorMessage: 'Email not confirmed. Please check your inbox to confirm your account before logging in.'
+          };
         }
         
-        // Try mock login system for development
         console.log('Trying mock login system...');
         
-        // Find user with matching credentials in mock data
         const MOCK_USERS = [
           {
             id: '1',
@@ -233,10 +220,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         );
         
         if (foundUser) {
-          // Omit password from user data
           const { password, ...userWithoutPassword } = foundUser;
           
-          // Save user to state and localStorage
           setUser(userWithoutPassword);
           localStorage.setItem('farmlytic_user', JSON.stringify(userWithoutPassword));
           
@@ -247,21 +232,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           });
           
           setIsLoading(false);
-          return true;
+          return { success: true };
         } else {
           console.log('Mock login failed: User not found or incorrect credentials');
-          toast({
-            title: "Login Failed",
-            description: "Invalid email or password. Please try again.",
-            variant: "destructive",
-          });
           
           setIsLoading(false);
-          return false;
+          return {
+            success: false,
+            errorCode: 'invalid_credentials',
+            errorMessage: 'Invalid email or password. Please try again.'
+          };
         }
       }
 
-      // Supabase login successful
       console.log('Supabase login successful:', data);
       
       if (data.user) {
@@ -270,40 +253,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           description: "Welcome back!",
         });
         
-        // We don't need to manually set the user here as it will be handled by onAuthStateChange
-        
         setIsLoading(false);
-        return true;
+        return { success: true };
       } else {
-        toast({
-          title: "Login Failed",
-          description: "An unexpected error occurred. Please try again.",
-          variant: "destructive",
-        });
-        
         setIsLoading(false);
-        return false;
+        return {
+          success: false,
+          errorCode: 'unknown_error',
+          errorMessage: 'An unexpected error occurred. Please try again.'
+        };
       }
     } catch (error) {
       console.error('Login error:', error);
-      toast({
-        title: "Login Error",
-        description: "An unexpected error occurred. Please try again.",
-        variant: "destructive",
-      });
       
       setIsLoading(false);
-      return false;
+      return {
+        success: false,
+        errorCode: 'unknown_error',
+        errorMessage: 'An unexpected error occurred. Please try again.'
+      };
     }
   };
 
-  // Register function
   const register = async (name: string, email: string, password: string, role: UserRole): Promise<boolean> => {
     setIsLoading(true);
     try {
       console.log(`Attempting to register ${email} with role ${role}...`);
       
-      // Register with Supabase
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -318,7 +294,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error) {
         console.error('Supabase registration error:', error.message);
         
-        // Handle specific Supabase errors
         if (error.message.includes('User already registered')) {
           toast({
             title: "Registration Failed",
@@ -329,10 +304,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return false;
         }
         
-        // Try mock registration if Supabase fails
         console.log('Using mock registration system...');
         
-        // Mock users for development
         const MOCK_USERS = [
           {
             id: '1',
@@ -371,7 +344,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return false;
         }
         
-        // Create new user
         const newUser = {
           id: (MOCK_USERS.length + 1).toString(),
           name,
@@ -380,13 +352,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           role
         };
         
-        // In a real app, you would save this to a database
         MOCK_USERS.push(newUser);
         
-        // Omit password from user data
         const { password: _, ...userWithoutPassword } = newUser;
         
-        // Save user to state and localStorage
         setUser(userWithoutPassword);
         localStorage.setItem('farmlytic_user', JSON.stringify(userWithoutPassword));
         
@@ -400,7 +369,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return true;
       }
 
-      // Supabase registration successful
       console.log('Supabase registration response:', data);
       
       if (data.user) {
@@ -409,12 +377,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           description: `Welcome to FarmLytic, ${name}!`,
         });
         
-        // If Supabase registration is successful but there's no automatic sign-in,
-        // we automatically sign in the user
         if (!data.session) {
           console.log('No session after signup, attempting auto-login...');
           
-          // Add a delay to ensure the user is fully created in Supabase
           await new Promise(resolve => setTimeout(resolve, 1500));
           
           const { error: signInError } = await supabase.auth.signInWithPassword({
@@ -425,7 +390,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (signInError) {
             console.error('Auto sign-in after registration failed:', signInError);
             
-            // Create a temporary user anyway for development
             const tempUser: User = {
               id: data.user.id,
               name: name,
@@ -470,15 +434,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Logout function
   const logout = async () => {
     try {
-      // First try Supabase logout
       if (session) {
         await supabase.auth.signOut();
       }
       
-      // Also clear local storage
       setUser(null);
       localStorage.removeItem('farmlytic_user');
       
@@ -498,7 +459,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Update user profile function
   const updateUserProfile = async (profileData: {name?: string; email?: string; phone?: string}) => {
     if (!user) {
       throw new Error("User not authenticated");
@@ -507,7 +467,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       setIsLoading(true);
       
-      // Update the profile in Supabase
       const { error } = await supabase
         .from('profiles')
         .update({
@@ -521,7 +480,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw error;
       }
       
-      // Update the local user state
       setUser({
         ...user,
         name: profileData.name || user.name,
@@ -529,7 +487,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         phone: profileData.phone || user.phone
       });
       
-      // Also update localStorage
       localStorage.setItem('farmlytic_user', JSON.stringify({
         ...user,
         name: profileData.name || user.name,
@@ -546,7 +503,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Update password function
   const updatePassword = async (currentPassword: string, newPassword: string) => {
     if (!session?.user) {
       throw new Error("User not authenticated");
@@ -555,7 +511,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       setIsLoading(true);
       
-      // First verify the current password is correct by trying to sign in
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email: user?.email || '',
         password: currentPassword
@@ -565,7 +520,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw new Error("Current password is incorrect");
       }
       
-      // Update the password
       const { error } = await supabase.auth.updateUser({
         password: newPassword
       });
@@ -598,7 +552,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-// Custom hook to use the auth context
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
