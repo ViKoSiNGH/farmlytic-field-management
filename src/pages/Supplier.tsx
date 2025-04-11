@@ -28,7 +28,7 @@ const Supplier = () => {
         setIsChecking(true);
         try {
           // Ensure user is authenticated with Supabase
-          const { data } = await supabase.auth.getSession();
+          const { data, error: sessionError } = await supabase.auth.getSession();
           const currentSession = data?.session;
           console.log("Auth session status:", currentSession ? "Active" : "None");
           
@@ -57,6 +57,7 @@ const Supplier = () => {
             const { data, error } = await supabase
               .from('inventory')
               .select('*')
+              .eq('user_id', user.id)
               .limit(1);
               
             if (error) {

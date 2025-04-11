@@ -44,10 +44,18 @@ export function SupplierPanel() {
 
   const loadInventory = async () => {
     try {
+      if (!user?.id) {
+        console.error('User not authenticated or missing ID');
+        setInventory(getInventorySamples());
+        return;
+      }
+      
+      console.log('Fetching inventory for user:', user.id);
+      
       const { data, error } = await supabase
         .from('inventory')
         .select('*')
-        .eq('user_id', user?.id)
+        .eq('user_id', user.id)
         .order('name', { ascending: true });
       
       if (error) {
@@ -68,21 +76,19 @@ export function SupplierPanel() {
         return;
       }
       
-      if (data) {
-        const mappedInventory: InventoryItem[] = data.map(item => ({
-          id: item.id,
-          type: item.type,
-          name: item.name,
-          quantity: item.quantity,
-          unit: item.unit,
-          price: item.price || 0,
-          sellerId: item.user_id,
-          available: item.available
-        }));
-        
-        setInventory(mappedInventory);
-        localStorage.setItem('farmlytic_supplier_inventory', JSON.stringify(mappedInventory));
-      }
+      const mappedInventory: InventoryItem[] = data.map(item => ({
+        id: item.id,
+        type: item.type,
+        name: item.name,
+        quantity: item.quantity,
+        unit: item.unit,
+        price: item.price || 0,
+        sellerId: item.user_id,
+        available: item.available
+      }));
+      
+      setInventory(mappedInventory);
+      localStorage.setItem('farmlytic_supplier_inventory', JSON.stringify(mappedInventory));
     } catch (error) {
       console.error('Error in loadInventory:', error);
       setInventory(getInventorySamples());
@@ -283,6 +289,17 @@ export function SupplierPanel() {
     }
     
     try {
+      const { data: authData, error: authError } = await supabase.auth.getSession();
+      if (authError || !authData.session) {
+        console.error('Authentication error:', authError || 'No active session');
+        toast({
+          title: "Authentication Error",
+          description: "Please log in again to continue.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
       const itemToAdd = {
         type: newItem.type,
         name: newItem.name,
