@@ -1,21 +1,25 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Layout } from '@/components/Layout';
 import { RolePanels } from '@/components/RolePanels';
 import { useAuth } from '@/hooks/use-auth';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, setupRealtimeSubscriptions } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 const Farmer = () => {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
   
-  // Initialize farmer settings if needed - but without automatic prompts or redirects
+  // Initialize farmer settings and realtime subscriptions
   useEffect(() => {
     if (isAuthenticated && user?.role === 'farmer') {
+      // Set up realtime subscriptions for all relevant tables
+      setupRealtimeSubscriptions();
+      
       // Check if farmer has any fields yet
       const setupFarmerDefaults = async () => {
         try {
@@ -27,6 +31,19 @@ const Farmer = () => {
             
           // No automatic redirects or toasts - just check if fields exist
           console.log("Farmer has fields:", fields && fields.length > 0);
+          
+          // Check inventory availability to ensure we can display items from suppliers
+          const { data: inventoryItems, error: inventoryError } = await supabase
+            .from('inventory')
+            .select('*')
+            .eq('available', true)
+            .limit(5);
+            
+          if (inventoryError) {
+            console.error('Error checking inventory:', inventoryError);
+          } else {
+            console.log("Available inventory items:", inventoryItems?.length || 0);
+          }
         } catch (error) {
           console.error('Error checking farmer setup:', error);
         }
@@ -34,7 +51,7 @@ const Farmer = () => {
       
       setupFarmerDefaults();
     }
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user, toast]);
   
   return (
     <Layout>

@@ -40,7 +40,7 @@ export function SupplierPanel() {
   useEffect(() => {
     loadInventory();
     loadRequests();
-  }, []);
+  }, [user?.id]);
 
   const loadInventory = async () => {
     try {
@@ -97,10 +97,20 @@ export function SupplierPanel() {
   
   const loadRequests = async () => {
     try {
+      if (!user?.id) {
+        console.error('User not authenticated or missing ID');
+        setRequests(getSampleRequests());
+        return;
+      }
+      
       const { data, error } = await supabase
         .from('requests')
-        .select('*')
+        .select(`
+          *,
+          profiles:farmer_id(name, email, phone)
+        `)
         .eq('type', 'purchase')
+        .or(`target_id.eq.${user.id},target_id.is.null`)
         .order('created_at', { ascending: false });
       
       if (error) {
@@ -125,8 +135,11 @@ export function SupplierPanel() {
       }
       
       if (data) {
+        console.log('Fetched requests:', data.length);
+        
         const formattedRequests: FarmerRequest[] = data.map((req: any) => {
-          const farmerName = req.farmer_name || req.farmer_id || 'Unknown Farmer';
+          const farmerProfile = req.profiles || {};
+          const farmerName = farmerProfile.name || req.farmer_id || 'Unknown Farmer';
           const status = validateStatus(req.status);
           return {
             id: req.id,
@@ -140,8 +153,8 @@ export function SupplierPanel() {
             createdAt: new Date(req.created_at),
             targetId: req.target_id,
             response: req.response,
-            contactPhone: req.contact_phone,
-            contactEmail: req.contact_email,
+            contactPhone: req.contact_phone || farmerProfile.phone,
+            contactEmail: req.contact_email || farmerProfile.email,
             isCustom: req.is_custom
           };
         });
@@ -168,9 +181,21 @@ export function SupplierPanel() {
 
   const handleUpdateStatus = async (requestId: string, newStatus: string) => {
     try {
+      const request = requests.find(req => req.id === requestId);
+      
+      let responseMessage = '';
+      if (newStatus === 'accepted' && user) {
+        responseMessage = `Your request has been accepted. Please contact us at ${user.phone || 'N/A'} or ${user.email || 'N/A'} for further details.`;
+      } else if (newStatus === 'rejected') {
+        responseMessage = 'Unfortunately, we cannot fulfill this request at this time.';
+      }
+      
       const { data, error } = await supabase
         .from('requests')
-        .update({ status: newStatus })
+        .update({ 
+          status: newStatus,
+          response: responseMessage
+        })
         .eq('id', requestId);
   
       if (error) {
@@ -184,13 +209,19 @@ export function SupplierPanel() {
       }
   
       setRequests(requests.map(req =>
-        req.id === requestId ? { ...req, status: validateStatus(newStatus) } : req
+        req.id === requestId ? { 
+          ...req, 
+          status: validateStatus(newStatus),
+          response: responseMessage
+        } : req
       ));
   
       toast({
         title: "Success",
         description: `Request status updated to ${newStatus}.`,
       });
+      
+      loadRequests();
     } catch (error) {
       console.error('Error updating status:', error);
       toast({
@@ -755,46 +786,95 @@ export function SupplierPanel() {
       <TabsContent value="requests">
         <Card>
           <CardHeader>
-            <h3 className="text-lg font-semibold">Farmer Requests</h3>
+            <CardTitle>Farmer Requests</CardTitle>
+            <CardDescription>View and respond to purchase requests from farmers</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-4">
+            <div className="space-y-4">
+              {requests.length === 0 && (
+                <p className="text-center text-muted-foreground py-4">
+                  No purchase requests available. Requests will appear here when farmers submit them.
+                </p>
+              )}
+              
               {requests.map((request) => (
-                <div key={request.id} className="border rounded-md p-4">
-                  <h4 className="font-semibold">{request.farmerName} - {request.item}</h4>
-                  <p>Quantity: {request.quantity}</p>
-                  <p>Description: {request.description}</p>
-                  <p>Status: {request.status}</p>
-                  <p>Created At: {request.createdAt.toLocaleDateString()}</p>
-                  <div className="flex gap-2 mt-2">
-                    {request.status === 'pending' && (
-                      <>
-                        <Button size="sm" variant="outline" onClick={() => handleUpdateStatus(request.id, 'accepted')}>
-                          Accept
-                        </Button>
-                        <Button size="sm" variant="destructive" onClick={() => handleUpdateStatus(request.id, 'rejected')}>
-                          Reject
-                        </Button>
-                      </>
-                    )}
-                    {request.contactPhone && (
-                      <Button size="sm" variant="secondary" asChild>
-                        <a href={`tel:${request.contactPhone}`} className="flex items-center">
-                          <Phone className="mr-2 h-4 w-4" />
-                          Call
-                        </a>
-                      </Button>
-                    )}
-                    {request.contactEmail && (
-                      <Button size="sm" variant="secondary" asChild>
-                        <a href={`mailto:${request.contactEmail}`} className="flex items-center">
-                          <Mail className="mr-2 h-4 w-4" />
-                          Email
-                        </a>
-                      </Button>
-                    )}
-                  </div>
-                </div>
+                <Card key={request.id} className="overflow-hidden">
+                  <CardHeader className="bg-muted pb-2">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          {request.item || 'Custom Request'}
+                          {request.isCustom && <Badge variant="outline">Custom</Badge>}
+                        </CardTitle>
+                        <CardDescription>
+                          From: {request.farmerName} • Requested: {request.createdAt.toLocaleDateString()}
+                        </CardDescription>
+                      </div>
+                      <Badge
+                        variant={
+                          request.status === 'accepted' ? 'default' :
+                          request.status === 'rejected' ? 'destructive' : 
+                          request.status === 'completed' ? 'secondary' : 'outline'
+                        }
+                      >
+                        {request.status}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-4">
+                    <div className="space-y-3">
+                      <div>
+                        <h4 className="text-sm font-medium">Request Details:</h4>
+                        <p className="text-sm">{request.description}</p>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <h4 className="text-sm font-medium">Quantity:</h4>
+                          <p className="text-sm">{request.quantity}</p>
+                        </div>
+                        
+                        <div>
+                          <h4 className="text-sm font-medium">Status:</h4>
+                          <p className="text-sm capitalize">{request.status}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="border-t pt-3">
+                        <h4 className="text-sm font-medium mb-2">Farmer Contact Details:</h4>
+                        <div className="flex space-x-4">
+                          {request.contactPhone && (
+                            <Button size="sm" variant="secondary" asChild>
+                              <a href={`tel:${request.contactPhone}`} className="flex items-center">
+                                <Phone className="mr-2 h-4 w-4" />
+                                {request.contactPhone}
+                              </a>
+                            </Button>
+                          )}
+                          {request.contactEmail && (
+                            <Button size="sm" variant="secondary" asChild>
+                              <a href={`mailto:${request.contactEmail}`} className="flex items-center">
+                                <Mail className="mr-2 h-4 w-4" />
+                                {request.contactEmail}
+                              </a>
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {request.status === 'pending' && (
+                        <div className="flex gap-2 mt-2 border-t pt-3">
+                          <Button onClick={() => handleUpdateStatus(request.id, 'accepted')}>
+                            Accept Request
+                          </Button>
+                          <Button variant="destructive" onClick={() => handleUpdateStatus(request.id, 'rejected')}>
+                            Reject
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
               ))}
             </div>
           </CardContent>

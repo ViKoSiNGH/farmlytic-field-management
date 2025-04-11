@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -230,6 +229,8 @@ export function FarmerPanel() {
           sellerId: item.user_id,
           available: item.available
         }));
+        
+        console.log('Fetched inventory items:', formattedItems.length);
         setInventory(formattedItems);
       }
     } catch (error) {
@@ -411,7 +412,15 @@ export function FarmerPanel() {
     
     try {
       let targetId = newRequest.targetId;
-      if (newRequest.type === 'advice') {
+      const selectedItem = inventory.find(item => 
+        item.name === (newRequest.type === 'custom' ? newRequest.customItem : newRequest.item)
+      );
+      
+      if (newRequest.type === 'purchase' || newRequest.type === 'custom') {
+        if (selectedItem && selectedItem.sellerId) {
+          targetId = selectedItem.sellerId;
+        }
+      } else if (newRequest.type === 'advice') {
         targetId = null;
       }
       
@@ -433,31 +442,15 @@ export function FarmerPanel() {
       
       if (error) {
         console.error('Error creating request:', error);
-        const newReq: FarmerRequest = {
-          id: `req-${Date.now()}`,
-          farmerId: user?.id || 'farmer1',
-          farmerName: user?.name || 'John Farmer',
-          type: newRequest.type === 'custom' ? 'purchase' : newRequest.type,
-          description: newRequest.description,
-          status: 'pending',
-          createdAt: new Date(),
-          targetId: targetId,
-          contactPhone: newRequest.contactPhone,
-          contactEmail: newRequest.contactEmail,
-          isCustom: newRequest.type === 'custom'
-        };
-        
-        if (newRequest.type === 'purchase' || newRequest.type === 'custom') {
-          newReq.item = newRequest.type === 'custom' ? newRequest.customItem : newRequest.item;
-          newReq.quantity = newRequest.quantity;
-        }
-        
-        const updatedRequests = [...requests, newReq];
-        setRequests(updatedRequests);
-        localStorage.setItem('farmlytic_requests', JSON.stringify(updatedRequests));
-      } else {
-        fetchRequests();
+        toast({
+          title: "Request Error",
+          description: error.message || "Failed to submit request. Please try again.",
+          variant: "destructive"
+        });
+        return;
       }
+      
+      fetchRequests();
       
       setNewRequest({
         type: 'purchase',
@@ -590,17 +583,19 @@ export function FarmerPanel() {
                 <select 
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2"
                   value={newRequest.item}
-                  onChange={(e) => setNewRequest({...newRequest, item: e.target.value})}
+                  onChange={(e) => {
+                    const selectedItem = inventory.find(item => item.name === e.target.value);
+                    setNewRequest({
+                      ...newRequest, 
+                      item: e.target.value,
+                      targetId: selectedItem?.sellerId || ''
+                    });
+                  }}
                 >
                   <option value="">Select an item</option>
-                  {availableItems.map((item, index) => (
-                    <option key={index} value={item.name}>
-                      {item.name} - ₹{item.price} per {item.unit}
-                    </option>
-                  ))}
                   {inventory.map(item => (
                     <option key={item.id} value={item.name}>
-                      {item.name} - ₹{item.price} per {item.unit}
+                      {item.name} - ₹{item.price} per {item.unit} {item.sellerId ? '(Supplier Item)' : ''}
                     </option>
                   ))}
                 </select>

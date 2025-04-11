@@ -14,6 +14,52 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     flowType: 'pkce',
     storage: localStorage
   },
+  global: {
+    fetch: (...args) => {
+      const [url, options] = args;
+      const headers = options?.headers || {};
+      // Add additional headers if needed
+      return fetch(url, {
+        ...options,
+        headers: {
+          ...headers,
+        },
+      });
+    },
+  },
+  realtime: {
+    params: {
+      eventsPerSecond: 10
+    }
+  }
 });
+
+// Enable real-time subscriptions for all relevant tables
+const TABLES_TO_SYNC = ['inventory', 'requests', 'profiles'];
+let realtimeSetup = false;
+
+export const setupRealtimeSubscriptions = async () => {
+  if (realtimeSetup) return;
+  
+  try {
+    TABLES_TO_SYNC.forEach(table => {
+      supabase
+        .channel(`public:${table}`)
+        .on('postgres_changes', { 
+          event: '*', 
+          schema: 'public', 
+          table 
+        }, (payload) => {
+          console.log(`Realtime update for ${table}:`, payload);
+        })
+        .subscribe();
+    });
+    
+    realtimeSetup = true;
+    console.log('Realtime subscriptions set up for:', TABLES_TO_SYNC.join(', '));
+  } catch (error) {
+    console.error('Error setting up realtime subscriptions:', error);
+  }
+};
 
 console.log('Supabase client initialized with persistSession and autoRefreshToken');

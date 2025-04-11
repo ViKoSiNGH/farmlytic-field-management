@@ -7,13 +7,14 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
+import { supabase, setupRealtimeSubscriptions } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 const Supplier = () => {
   const { user, isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
   const [isChecking, setIsChecking] = useState(true);
+  const { toast } = useToast();
   
   // Initialize supplier inventory and check permissions
   useEffect(() => {
@@ -23,6 +24,9 @@ const Supplier = () => {
     }
     
     if (isAuthenticated && user?.role === 'supplier') {
+      // Set up realtime subscriptions for all relevant tables
+      setupRealtimeSubscriptions();
+      
       // Check for RLS issues and create demo inventory if new supplier
       const setupSupplierRights = async () => {
         setIsChecking(true);
@@ -54,21 +58,35 @@ const Supplier = () => {
             console.log("Current user ID:", user.id);
             
             // Try to fetch inventory to see if permissions are working
-            const { data, error } = await supabase
+            const { data: inventoryData, error: inventoryError } = await supabase
               .from('inventory')
               .select('*')
               .eq('user_id', user.id)
               .limit(1);
               
-            if (error) {
-              console.error('Error checking supplier inventory:', error);
+            if (inventoryError) {
+              console.error('Error checking supplier inventory:', inventoryError);
               toast({
                 title: "Database Access Error",
                 description: "Unable to access inventory. Please refresh or contact support.",
                 variant: "destructive",
               });
             } else {
-              console.log("Supplier inventory check successful:", data?.length || 0, "items found");
+              console.log("Supplier inventory check successful:", inventoryData?.length || 0, "items found");
+            }
+            
+            // Check for farmer requests targeted at this supplier
+            const { data: requestsData, error: requestsError } = await supabase
+              .from('requests')
+              .select('*')
+              .eq('type', 'purchase')
+              .order('created_at', { ascending: false })
+              .limit(5);
+              
+            if (requestsError) {
+              console.error('Error checking farmer requests:', requestsError);
+            } else {
+              console.log("Recent purchase requests:", requestsData?.length || 0);
             }
           }
         } catch (error) {
@@ -82,7 +100,7 @@ const Supplier = () => {
     } else {
       setIsChecking(false);
     }
-  }, [isAuthenticated, user, isLoading]);
+  }, [isAuthenticated, user, isLoading, toast]);
   
   // If still loading auth state, show a loading indicator
   if (isLoading) {
