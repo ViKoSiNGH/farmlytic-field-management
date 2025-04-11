@@ -28,10 +28,11 @@ const Supplier = () => {
         setIsChecking(true);
         try {
           // Ensure user is authenticated with Supabase
-          const { data: { session } } = await supabase.auth.getSession();
-          console.log("Auth session status:", session?.session ? "Active" : "None");
+          const { data } = await supabase.auth.getSession();
+          const session = data?.session;
+          console.log("Auth session status:", session ? "Active" : "None");
           
-          if (!session?.session) {
+          if (!session) {
             console.log("No active session found");
             
             // Try to refresh the session

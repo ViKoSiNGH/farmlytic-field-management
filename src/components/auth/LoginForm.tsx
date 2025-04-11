@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -20,7 +19,7 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 
 export function LoginForm() {
   const { toast } = useToast();
-  const { login } = useAuth();
+  const { login, getRole } = useAuth();
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
@@ -49,8 +48,7 @@ export function LoginForm() {
         });
         
         // Get user role and redirect to appropriate dashboard
-        const { data } = await useAuth();
-        const role = data?.user?.role || 'farmer';
+        const role = getRole() || 'farmer';
         navigate(`/${role}`);
       } else {
         setAuthError("Invalid email or password. Please try again.");
