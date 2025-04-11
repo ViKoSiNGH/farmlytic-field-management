@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -15,7 +14,7 @@ import { Button as ShadcnButton } from '@/components/ui/button';
 
 export function SpecialistPanel() {
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState('advice');
   const [requests, setRequests] = useState<FarmerRequest[]>([]);
   const [responseText, setResponseText] = useState<{[key: string]: string}>({});
@@ -27,6 +26,8 @@ export function SpecialistPanel() {
       timestamp: Date;
     }[];
   }[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
   const [analyticsData, setAnalyticsData] = useState([
     { category: 'Crops', answered: 12 },
@@ -38,6 +39,12 @@ export function SpecialistPanel() {
   ]);
   
   useEffect(() => {
+    if (!isAuthenticated || !user) {
+      setIsLoading(false);
+      setError('You must be logged in to access this panel');
+      return;
+    }
+    
     fetchRequests();
     
     const savedMessages = localStorage.getItem('farmlytic_chat_messages');
@@ -75,24 +82,42 @@ export function SpecialistPanel() {
     return () => {
       supabase.removeChannel(requestsChannel);
     };
-  }, [user?.id]);
+  }, [user?.id, isAuthenticated]);
   
   const fetchRequests = async () => {
     try {
+      setIsLoading(true);
+      setError(null);
+      
+      if (!user) {
+        setError('Authentication required');
+        setIsLoading(false);
+        return;
+      }
+      
+      console.log('Fetching advice requests for specialist:', user.id);
+      
       let query = supabase
         .from('requests')
         .select('*')
         .eq('type', 'advice')
         .order('created_at', { ascending: false });
+      
+      if (user.id) {
+        query = query.eq('target_id', user.id);
+      }
         
       const { data, error } = await query;
       
       if (error) {
         console.error('Error fetching requests:', error);
+        setError('Failed to load requests: ' + error.message);
         return;
       }
       
       if (data) {
+        console.log('Found', data.length, 'advice requests');
+        
         const formattedRequests: FarmerRequest[] = await Promise.all(
           data.map(async (req) => {
             let farmerName = "Unknown Farmer";
@@ -134,10 +159,22 @@ export function SpecialistPanel() {
       }
     } catch (error) {
       console.error('Failed to fetch requests:', error);
+      setError('An unexpected error occurred');
+    } finally {
+      setIsLoading(false);
     }
   };
   
   const handleRespondToRequest = async (requestId: string, newStatus: 'accepted' | 'rejected') => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "You must be logged in to respond to requests.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     const response = responseText[requestId];
     
     if (!response) {
@@ -155,7 +192,7 @@ export function SpecialistPanel() {
         .update({
           status: newStatus,
           response: response,
-          target_id: user?.id
+          target_id: user.id
         })
         .eq('id', requestId);
         
@@ -163,7 +200,7 @@ export function SpecialistPanel() {
         console.error('Error updating request:', error);
         toast({
           title: "Error",
-          description: "Failed to update request. Please try again.",
+          description: "Failed to update request: " + error.message,
           variant: "destructive"
         });
         return;
@@ -194,7 +231,6 @@ export function SpecialistPanel() {
   
   const handleMarkAsCompleted = async (requestId: string) => {
     try {
-      // Mark the request as completed
       const { error } = await supabase
         .from('requests')
         .update({
@@ -293,6 +329,15 @@ export function SpecialistPanel() {
   const handleSendChatMessage = (requestId: string, message: string) => {
     if (!message.trim()) return;
     
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "You must be logged in to send messages.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     addChatMessage(requestId, 'specialist', message);
     
     const textareaElement = document.getElementById(`chat-${requestId}`) as HTMLTextAreaElement;
@@ -314,6 +359,57 @@ export function SpecialistPanel() {
       default: return 'secondary';
     }
   };
+  
+  if (!isAuthenticated) {
+    return (
+      <Card className="w-full">
+        <CardContent className="p-6 text-center">
+          <div className="text-amber-500 mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m0 0v2m0-2h2m-2 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h3 className="text-xl font-bold mb-2">Authentication Required</h3>
+          <p className="text-muted-foreground mb-4">
+            You need to be logged in as a specialist to access this panel.
+          </p>
+          <Button onClick={() => window.location.href = '/login'}>
+            Go to Login
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+  
+  if (isLoading) {
+    return (
+      <Card className="w-full">
+        <CardContent className="p-6 text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading advice requests...</p>
+        </CardContent>
+      </Card>
+    );
+  }
+  
+  if (error) {
+    return (
+      <Card className="w-full">
+        <CardContent className="p-6 text-center">
+          <div className="text-red-500 mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h3 className="text-xl font-bold mb-2">Error Loading Data</h3>
+          <p className="text-muted-foreground mb-4">{error}</p>
+          <Button onClick={fetchRequests}>
+            Try Again
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
   
   return (
     <div className="w-full space-y-6">

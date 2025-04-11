@@ -1,21 +1,27 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Layout } from '@/components/Layout';
 import { RolePanels } from '@/components/RolePanels';
 import { useAuth } from '@/hooks/use-auth';
-import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
+import { useToast } from '@/hooks/use-toast';
 
 const Specialist = () => {
   const { user, isAuthenticated } = useAuth();
+  const { toast } = useToast();
 
   useEffect(() => {
     // Create demo advice requests for testing if user is authenticated and a specialist
     const createDemoRequests = async () => {
-      if (!isAuthenticated || user?.role !== 'specialist') return;
+      if (!isAuthenticated || !user || user?.role !== 'specialist') {
+        console.log('Not creating demo requests: user not authenticated or not a specialist');
+        return;
+      }
 
       try {
+        console.log('Checking for existing requests for specialist:', user.id);
+        
         // Check if demo requests already exist for this specialist
         const { data: existingRequests, error: checkError } = await supabase
           .from('requests')
@@ -30,6 +36,8 @@ const Specialist = () => {
 
         // Only create demo requests if none exist
         if (!existingRequests || existingRequests.length === 0) {
+          console.log('No existing requests found, creating demo requests');
+          
           // Use proper UUID format for demo farmers
           const demoRequests = [
             {
@@ -55,14 +63,20 @@ const Specialist = () => {
           ];
 
           for (const request of demoRequests) {
-            const { error } = await supabase.from('requests').insert(request);
+            const { error, data } = await supabase.from('requests').insert(request);
             if (error) {
               console.error('Error creating demo request:', error);
+            } else {
+              console.log('Demo request created successfully:', data);
             }
           }
           
-          // We're not showing a toast notification here anymore
-          console.log('Demo requests created silently');
+          toast({
+            title: "Demo Content Created",
+            description: "Sample advice requests have been created for your specialist account.",
+          });
+        } else {
+          console.log('Demo requests already exist:', existingRequests.length);
         }
       } catch (error) {
         console.error('Error setting up demo requests:', error);
@@ -70,8 +84,12 @@ const Specialist = () => {
     };
 
     // Call the function to create demo requests
-    createDemoRequests();
-  }, [isAuthenticated, user]);
+    if (isAuthenticated && user) {
+      setTimeout(() => {
+        createDemoRequests();
+      }, 1000); // Slight delay to ensure auth is fully loaded
+    }
+  }, [isAuthenticated, user, toast]);
 
   return (
     <Layout>
