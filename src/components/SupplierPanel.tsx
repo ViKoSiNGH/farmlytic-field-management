@@ -100,7 +100,7 @@ export function SupplierPanel() {
       if (error) {
         console.error('Error fetching requests:', error);
         
-        const savedRequests = localStorage.getItem('farmlylytic_supplier_requests');
+        const savedRequests = localStorage.getItem('farmlytic_supplier_requests');
         if (savedRequests) {
           try {
             const parsedRequests: FarmerRequest[] = JSON.parse(savedRequests).map((req: any) => ({
@@ -301,8 +301,28 @@ export function SupplierPanel() {
         .select();
         
       if (error) {
-        console.error('Error details:', error);
-        throw error;
+        console.error('Error adding inventory item:', error);
+        
+        if (error.code === '42501') {
+          toast({
+            title: "Permission Denied",
+            description: "You don't have permission to add items. Please check your account permissions.",
+            variant: "destructive",
+          });
+        } else if (error.code === '23505') {
+          toast({
+            title: "Duplicate Item",
+            description: "An item with this name already exists.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: "Failed to add inventory item. Please try again.",
+            variant: "destructive",
+          });
+        }
+        return;
       }
       
       toast({

@@ -29,10 +29,10 @@ const Supplier = () => {
         try {
           // Ensure user is authenticated with Supabase
           const { data } = await supabase.auth.getSession();
-          const session = data?.session;
-          console.log("Auth session status:", session ? "Active" : "None");
+          const currentSession = data?.session;
+          console.log("Auth session status:", currentSession ? "Active" : "None");
           
-          if (!session) {
+          if (!currentSession) {
             console.log("No active session found");
             
             // Try to refresh the session
@@ -81,7 +81,7 @@ const Supplier = () => {
     } else {
       setIsChecking(false);
     }
-  }, [isAuthenticated, user, isLoading, toast]);
+  }, [isAuthenticated, user, isLoading]);
   
   // If still loading auth state, show a loading indicator
   if (isLoading) {
