@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,11 +21,21 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 
 export function LoginForm() {
   const { toast } = useToast();
-  const { login, getRole } = useAuth();
+  const { login, getRole, user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [isEmailNotConfirmed, setIsEmailNotConfirmed] = useState(false);
+  
+  // Debug log for authentication state
+  useEffect(() => {
+    console.log("LoginForm - Auth state:", { isAuthenticated, user });
+    
+    if (isAuthenticated && user) {
+      console.log("LoginForm - User is authenticated, redirecting to", `/${user.role}`);
+      navigate(`/${user.role}`, { replace: true });
+    }
+  }, [isAuthenticated, user, navigate]);
   
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -52,13 +62,12 @@ export function LoginForm() {
           description: "Welcome back!",
         });
         
-        // Get user role and redirect to appropriate dashboard after a brief delay
-        // to allow auth state to fully propagate
+        // Force a page reload after a successful login to ensure clean state
         setTimeout(() => {
           const role = getRole() || 'farmer';
           console.log("Redirecting to dashboard for role:", role);
-          navigate(`/${role}`, { replace: true });
-        }, 1000); // Increased from 500ms to 1000ms for better reliability
+          window.location.href = `/${role}`;
+        }, 1000);
       } else {
         // Check if the error is related to email confirmation
         if (errorCode === 'email_not_confirmed') {

@@ -11,10 +11,16 @@ export default function Login() {
   const navigate = useNavigate();
   const [localLoading, setLocalLoading] = useState(true);
   
+  // Console log to debug authentication state
+  useEffect(() => {
+    console.log("Login page - Auth state:", { isAuthenticated, user, isLoading });
+  }, [isAuthenticated, user, isLoading]);
+  
   useEffect(() => {
     // Add a small delay to ensure auth state is properly loaded
     const timer = setTimeout(() => {
       setLocalLoading(false);
+      console.log("Local loading set to false");
     }, 1000);
     
     return () => clearTimeout(timer);
@@ -24,7 +30,8 @@ export default function Login() {
   useEffect(() => {
     if (!isLoading && !localLoading && isAuthenticated && user) {
       console.log("Login page: User is authenticated, redirecting to", `/${user.role}`);
-      navigate(`/${user.role}`, { replace: true });
+      // Force navigation to ensure redirection happens
+      window.location.href = `/${user.role}`;
     }
   }, [isAuthenticated, user, isLoading, localLoading, navigate]);
   

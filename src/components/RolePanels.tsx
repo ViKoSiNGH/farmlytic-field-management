@@ -18,14 +18,28 @@ export function RolePanels({ role }: RolePanelsProps) {
   const navigate = useNavigate();
   const [localLoading, setLocalLoading] = useState(true);
   
+  // Debug logging
+  useEffect(() => {
+    console.log("RolePanels - Auth state:", { isAuthenticated, user, isLoading, role });
+  }, [isAuthenticated, user, isLoading, role]);
+  
   // Add a small delay to ensure auth state is properly synchronized
   useEffect(() => {
     const timer = setTimeout(() => {
       setLocalLoading(false);
+      console.log("RolePanels - Local loading set to false");
     }, 1000);
     
     return () => clearTimeout(timer);
   }, []);
+  
+  // If not authenticated after loading, redirect to login
+  useEffect(() => {
+    if (!isLoading && !localLoading && !isAuthenticated) {
+      console.log("RolePanels - User not authenticated, redirecting to login");
+      navigate('/login', { replace: true });
+    }
+  }, [isAuthenticated, isLoading, localLoading, navigate]);
   
   // Combined loading state (auth loading or local loading)
   if (isLoading || localLoading) {

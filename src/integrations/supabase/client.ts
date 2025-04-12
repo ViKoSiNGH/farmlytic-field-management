@@ -27,6 +27,7 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
           ...headers,
           'apikey': SUPABASE_PUBLISHABLE_KEY, // Always include the API key
         },
+        credentials: 'include', // Important for session cookies
       });
     },
   },
@@ -68,6 +69,14 @@ export const setupRealtimeSubscriptions = async () => {
 // Add enhanced debug logging for authentication events
 supabase.auth.onAuthStateChange((event, session) => {
   console.log('Auth state changed:', event, session ? 'User authenticated' : 'No session');
+  
+  // Force refresh of auth state in local storage
+  if (session) {
+    localStorage.setItem('farmlytic_auth', JSON.stringify(session));
+  }
 });
 
 console.log('Supabase client initialized with persistSession and autoRefreshToken');
+
+// Refresh the Supabase session to ensure we have an active one
+supabase.auth.refreshSession();
