@@ -52,9 +52,13 @@ export function LoginForm() {
           description: "Welcome back!",
         });
         
-        // Get user role and redirect to appropriate dashboard
-        const role = getRole() || 'farmer';
-        navigate(`/${role}`);
+        // Get user role and redirect to appropriate dashboard after a brief delay
+        // to allow auth state to fully propagate
+        setTimeout(() => {
+          const role = getRole() || 'farmer';
+          console.log("Redirecting to dashboard for role:", role);
+          navigate(`/${role}`);
+        }, 500);
       } else {
         // Check if the error is related to email confirmation
         if (errorCode === 'email_not_confirmed') {
