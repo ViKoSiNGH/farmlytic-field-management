@@ -57,8 +57,8 @@ export function LoginForm() {
         setTimeout(() => {
           const role = getRole() || 'farmer';
           console.log("Redirecting to dashboard for role:", role);
-          navigate(`/${role}`);
-        }, 500);
+          navigate(`/${role}`, { replace: true });
+        }, 1000); // Increased from 500ms to 1000ms for better reliability
       } else {
         // Check if the error is related to email confirmation
         if (errorCode === 'email_not_confirmed') {
