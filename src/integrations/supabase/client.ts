@@ -21,7 +21,6 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     fetch: (...args) => {
       const [url, options] = args;
       const headers = options?.headers || {};
-      // Add additional headers if needed
       return fetch(url, {
         ...options,
         headers: {
@@ -65,5 +64,10 @@ export const setupRealtimeSubscriptions = async () => {
     console.error('Error setting up realtime subscriptions:', error);
   }
 };
+
+// Add enhanced debug logging for authentication events
+supabase.auth.onAuthStateChange((event, session) => {
+  console.log('Auth state changed:', event, session ? 'User authenticated' : 'No session');
+});
 
 console.log('Supabase client initialized with persistSession and autoRefreshToken');

@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Layout } from '@/components/Layout';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { useAuth } from '@/hooks/use-auth';
@@ -9,17 +9,27 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 export default function Login() {
   const { isAuthenticated, user, isLoading } = useAuth();
   const navigate = useNavigate();
+  const [localLoading, setLocalLoading] = useState(true);
+  
+  useEffect(() => {
+    // Add a small delay to ensure auth state is properly loaded
+    const timer = setTimeout(() => {
+      setLocalLoading(false);
+    }, 1000);
+    
+    return () => clearTimeout(timer);
+  }, []);
   
   // Handle redirection after authentication is confirmed
   useEffect(() => {
-    if (isAuthenticated && user && !isLoading) {
+    if (!isLoading && !localLoading && isAuthenticated && user) {
       console.log("Login page: User is authenticated, redirecting to", `/${user.role}`);
       navigate(`/${user.role}`, { replace: true });
     }
-  }, [isAuthenticated, user, isLoading, navigate]);
+  }, [isAuthenticated, user, isLoading, localLoading, navigate]);
   
-  // Show loading state while authentication is being checked
-  if (isLoading) {
+  // Combined loading state
+  if (isLoading || localLoading) {
     return (
       <Layout className="flex items-center justify-center min-h-screen">
         <div className="flex flex-col items-center justify-center">
@@ -32,6 +42,7 @@ export default function Login() {
   
   // If already authenticated, redirect to the appropriate role page
   if (isAuthenticated && user) {
+    console.log("User authenticated, redirecting to role page:", user.role);
     return <Navigate to={`/${user.role}`} replace />;
   }
   

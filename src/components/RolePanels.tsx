@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { SupplierPanel } from '@/components/SupplierPanel';
 import { SpecialistPanel } from '@/components/SpecialistPanel';
 import { FarmerPanel } from '@/components/FarmerPanel';
@@ -16,9 +16,19 @@ interface RolePanelsProps {
 export function RolePanels({ role }: RolePanelsProps) {
   const { user, isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
+  const [localLoading, setLocalLoading] = useState(true);
   
-  // If still loading auth state, show a loading indicator
-  if (isLoading) {
+  // Add a small delay to ensure auth state is properly synchronized
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLocalLoading(false);
+    }, 1000);
+    
+    return () => clearTimeout(timer);
+  }, []);
+  
+  // Combined loading state (auth loading or local loading)
+  if (isLoading || localLoading) {
     return (
       <div className="w-full text-center py-8">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
@@ -30,7 +40,7 @@ export function RolePanels({ role }: RolePanelsProps) {
   // Check if the current user's role matches the expected role for this page
   const isCorrectRole = user?.role === role;
   
-  // If user is not authenticated or has the wrong role, show appropriate message
+  // If user is not authenticated, show appropriate message
   if (!isAuthenticated) {
     return (
       <Card className="w-full">
@@ -40,7 +50,7 @@ export function RolePanels({ role }: RolePanelsProps) {
           <p className="text-muted-foreground mb-4">
             Please log in to access this dashboard.
           </p>
-          <Button onClick={() => navigate('/login')}>
+          <Button onClick={() => navigate('/login', { replace: true })}>
             Log In
           </Button>
         </CardContent>
@@ -48,6 +58,7 @@ export function RolePanels({ role }: RolePanelsProps) {
     );
   }
   
+  // If user has wrong role, show redirect message
   if (!isCorrectRole) {
     return (
       <Card className="w-full">
@@ -57,7 +68,7 @@ export function RolePanels({ role }: RolePanelsProps) {
           <p className="text-muted-foreground mb-4">
             This dashboard is for {role}s. You're logged in as a {user?.role}.
           </p>
-          <Button onClick={() => navigate(`/${user?.role}`)}>
+          <Button onClick={() => navigate(`/${user?.role}`, { replace: true })}>
             Go to Your Dashboard
           </Button>
         </CardContent>
@@ -65,6 +76,7 @@ export function RolePanels({ role }: RolePanelsProps) {
     );
   }
   
+  // If authentication and role checks pass, render the appropriate panel
   return (
     <div className="w-full">
       {role === 'farmer' && <FarmerPanel />}
