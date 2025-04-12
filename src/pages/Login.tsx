@@ -31,7 +31,7 @@ export default function Login() {
     if (!isLoading && !localLoading && isAuthenticated && user) {
       console.log("Login page: User is authenticated, redirecting to", `/${user.role}`);
       // Force navigation to ensure redirection happens
-      window.location.href = `/${user.role}`;
+      navigate(`/${user.role}`, { replace: true });
     }
   }, [isAuthenticated, user, isLoading, localLoading, navigate]);
   

@@ -11,6 +11,7 @@ import { Loader2, AlertCircle } from 'lucide-react';
 import * as z from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { supabase } from '@/integrations/supabase/client';
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -54,6 +55,37 @@ export function LoginForm() {
       const { email, password } = data;
       console.log("Attempting login with:", email);
       
+      // Try direct Supabase login first
+      try {
+        const { data: supabaseData, error: supabaseError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        
+        if (supabaseError) {
+          throw supabaseError;
+        }
+        
+        if (supabaseData.user) {
+          toast({
+            title: "Login Successful",
+            description: "Welcome back!",
+          });
+          
+          return; // Auth state change will trigger redirect
+        }
+      } catch (supabaseError: any) {
+        console.error('Direct Supabase login error:', supabaseError);
+        
+        if (supabaseError.message?.includes('Email not confirmed')) {
+          setIsEmailNotConfirmed(true);
+          setAuthError("Your email address has not been confirmed. Please check your inbox for a verification email.");
+          setIsSubmitting(false);
+          return;
+        }
+      }
+      
+      // Fallback to our custom login method if direct method fails
       const { success, errorCode, errorMessage } = await login(email, password);
       
       if (success) {
@@ -66,8 +98,8 @@ export function LoginForm() {
         setTimeout(() => {
           const role = getRole() || 'farmer';
           console.log("Redirecting to dashboard for role:", role);
-          window.location.href = `/${role}`;
-        }, 1000);
+          navigate(`/${role}`, { replace: true });
+        }, 500);
       } else {
         // Check if the error is related to email confirmation
         if (errorCode === 'email_not_confirmed') {
@@ -95,6 +127,49 @@ export function LoginForm() {
     }
   };
 
+  const resendVerificationEmail = async () => {
+    try {
+      const email = form.getValues('email');
+      if (!email) {
+        toast({
+          title: "Email Required",
+          description: "Please enter your email address.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      setIsSubmitting(true);
+      
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email,
+      });
+      
+      if (error) {
+        toast({
+          title: "Failed to Resend",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Verification Email Sent",
+          description: "Please check your inbox for the verification email.",
+        });
+      }
+    } catch (error) {
+      console.error('Failed to resend verification email:', error);
+      toast({
+        title: "Error",
+        description: "Failed to resend verification email. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="mx-auto w-full max-w-md space-y-6 p-4 sm:px-6 glass-card rounded-lg">
       <div className="space-y-2 text-center">
@@ -109,8 +184,8 @@ export function LoginForm() {
             {authError}
             {isEmailNotConfirmed && (
               <div className="mt-2">
-                <Button variant="outline" size="sm" className="text-xs" onClick={() => form.handleSubmit(onSubmit)()}>
-                  Resend verification email
+                <Button variant="outline" size="sm" className="text-xs" onClick={resendVerificationEmail} disabled={isSubmitting}>
+                  {isSubmitting ? 'Sending...' : 'Resend verification email'}
                 </Button>
               </div>
             )}

@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { AlertCircle } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface RolePanelsProps {
   role: 'farmer' | 'supplier' | 'specialist';
@@ -21,6 +22,14 @@ export function RolePanels({ role }: RolePanelsProps) {
   // Debug logging
   useEffect(() => {
     console.log("RolePanels - Auth state:", { isAuthenticated, user, isLoading, role });
+    
+    // Check for Supabase session
+    const checkSupabaseSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      console.log("RolePanels - Supabase session check:", data.session);
+    };
+    
+    checkSupabaseSession();
   }, [isAuthenticated, user, isLoading, role]);
   
   // Add a small delay to ensure auth state is properly synchronized
