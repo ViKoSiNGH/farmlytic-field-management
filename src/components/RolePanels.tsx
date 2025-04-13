@@ -8,7 +8,8 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { AlertCircle } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, setupRealtimeSubscriptions, refreshAuthSession } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface RolePanelsProps {
   role: 'farmer' | 'supplier' | 'specialist';
@@ -18,6 +19,7 @@ export function RolePanels({ role }: RolePanelsProps) {
   const { user, isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
   const [localLoading, setLocalLoading] = useState(true);
+  const { toast } = useToast();
   
   // Debug logging
   useEffect(() => {
@@ -27,10 +29,30 @@ export function RolePanels({ role }: RolePanelsProps) {
     const checkSupabaseSession = async () => {
       const { data } = await supabase.auth.getSession();
       console.log("RolePanels - Supabase session check:", data.session);
+      
+      if (!data.session && isAuthenticated) {
+        console.warn("Auth mismatch - logged in through context but no active Supabase session");
+        
+        // Try to refresh the session
+        const refreshed = await refreshAuthSession();
+        if (!refreshed) {
+          toast({
+            title: "Authentication Issue",
+            description: "Your session couldn't be verified. Please log in again.",
+            variant: "destructive"
+          });
+          navigate('/login', { replace: true });
+        }
+      }
     };
     
     checkSupabaseSession();
-  }, [isAuthenticated, user, isLoading, role]);
+    
+    // Always set up realtime subscriptions if authenticated
+    if (isAuthenticated) {
+      setupRealtimeSubscriptions();
+    }
+  }, [isAuthenticated, user, isLoading, role, navigate, toast]);
   
   // Add a small delay to ensure auth state is properly synchronized
   useEffect(() => {
