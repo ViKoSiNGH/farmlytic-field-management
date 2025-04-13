@@ -1,8 +1,7 @@
-
 import React, { useEffect, useState } from 'react';
-import { SupplierPanel } from '@/components/SupplierPanel';
+import SupplierPanel from '@/components/SupplierPanel';
 import { SpecialistPanel } from '@/components/SpecialistPanel';
-import { FarmerPanel } from '@/components/FarmerPanel';
+import FarmerPanel from '@/components/FarmerPanel';
 import { useAuth } from '@/hooks/use-auth';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
@@ -21,11 +20,9 @@ export function RolePanels({ role }: RolePanelsProps) {
   const [localLoading, setLocalLoading] = useState(true);
   const { toast } = useToast();
   
-  // Debug logging
   useEffect(() => {
     console.log("RolePanels - Auth state:", { isAuthenticated, user, isLoading, role });
     
-    // Check for Supabase session
     const checkSupabaseSession = async () => {
       const { data } = await supabase.auth.getSession();
       console.log("RolePanels - Supabase session check:", data.session);
@@ -33,7 +30,6 @@ export function RolePanels({ role }: RolePanelsProps) {
       if (!data.session && isAuthenticated) {
         console.warn("Auth mismatch - logged in through context but no active Supabase session");
         
-        // Try to refresh the session
         const refreshed = await refreshAuthSession();
         if (!refreshed) {
           toast({
@@ -48,13 +44,11 @@ export function RolePanels({ role }: RolePanelsProps) {
     
     checkSupabaseSession();
     
-    // Always set up realtime subscriptions if authenticated
     if (isAuthenticated) {
       setupRealtimeSubscriptions();
     }
   }, [isAuthenticated, user, isLoading, role, navigate, toast]);
   
-  // Add a small delay to ensure auth state is properly synchronized
   useEffect(() => {
     const timer = setTimeout(() => {
       setLocalLoading(false);
@@ -64,7 +58,6 @@ export function RolePanels({ role }: RolePanelsProps) {
     return () => clearTimeout(timer);
   }, []);
   
-  // If not authenticated after loading, redirect to login
   useEffect(() => {
     if (!isLoading && !localLoading && !isAuthenticated) {
       console.log("RolePanels - User not authenticated, redirecting to login");
@@ -72,7 +65,6 @@ export function RolePanels({ role }: RolePanelsProps) {
     }
   }, [isAuthenticated, isLoading, localLoading, navigate]);
   
-  // Combined loading state (auth loading or local loading)
   if (isLoading || localLoading) {
     return (
       <div className="w-full text-center py-8">
@@ -82,10 +74,8 @@ export function RolePanels({ role }: RolePanelsProps) {
     );
   }
   
-  // Check if the current user's role matches the expected role for this page
   const isCorrectRole = user?.role === role;
   
-  // If user is not authenticated, show appropriate message
   if (!isAuthenticated) {
     return (
       <Card className="w-full">
@@ -103,7 +93,6 @@ export function RolePanels({ role }: RolePanelsProps) {
     );
   }
   
-  // If user has wrong role, show redirect message
   if (!isCorrectRole) {
     return (
       <Card className="w-full">
@@ -121,7 +110,6 @@ export function RolePanels({ role }: RolePanelsProps) {
     );
   }
   
-  // If authentication and role checks pass, render the appropriate panel
   return (
     <div className="w-full">
       {role === 'farmer' && <FarmerPanel />}
