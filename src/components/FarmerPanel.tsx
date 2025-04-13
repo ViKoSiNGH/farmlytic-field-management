@@ -35,12 +35,10 @@ export function FarmerPanel() {
       
       console.log('Fetching available inventory items');
       
+      // Modified query - get inventory items directly and join with profiles table
       const { data, error } = await supabase
         .from('inventory')
-        .select(`
-          *,
-          profiles:user_id(name, email, phone)
-        `)
+        .select('*, profiles:user_id(name, email, phone)')
         .eq('available', true)
         .order('name', { ascending: true });
       
@@ -51,9 +49,11 @@ export function FarmerPanel() {
       }
       
       if (data) {
+        console.log('Raw inventory data:', data);
+        
         const formattedItems: InventoryItem[] = data.map(item => {
           // Properly cast the profiles data to our SellerProfile type
-          const sellerProfile = (item.profiles as SellerProfile) || {};
+          const sellerProfile = item.profiles as SellerProfile || {};
           
           return {
             id: item.id,
@@ -63,7 +63,7 @@ export function FarmerPanel() {
             unit: item.unit,
             price: item.price || 0,
             sellerId: item.user_id,
-            sellerName: sellerProfile.name || 'Unknown Supplier',
+            sellerName: sellerProfile?.name || 'Unknown Supplier',
             available: item.available
           };
         });
@@ -107,6 +107,14 @@ export function FarmerPanel() {
       }
     ];
   };
+  
+  const handleRequestItem = (item: InventoryItem) => {
+    toast({
+      title: "Request Sent",
+      description: `Your request for ${item.name} has been submitted to the supplier.`,
+    });
+    // In a real implementation, we would create a record in the requests table
+  };
 
   return (
     <div className="space-y-6">
@@ -132,7 +140,7 @@ export function FarmerPanel() {
                       Supplier: {item.sellerName || 'Unknown Supplier'}
                     </p>
                   </div>
-                  <Button size="sm">Request</Button>
+                  <Button size="sm" onClick={() => handleRequestItem(item)}>Request</Button>
                 </div>
               ))}
             </div>
