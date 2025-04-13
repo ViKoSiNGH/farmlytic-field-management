@@ -6,6 +6,13 @@ import { InventoryItem } from '@/types/auth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
+// Define type for the profile data from Supabase
+interface SellerProfile {
+  name?: string;
+  email?: string;
+  phone?: string;
+}
+
 export function FarmerPanel() {
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -45,9 +52,9 @@ export function FarmerPanel() {
       
       if (data) {
         const formattedItems: InventoryItem[] = data.map(item => {
-          // Fix for the TypeScript error - explicitly define the profile type with specific properties
-          const sellerProfile = item.profiles as { name?: string } || { name: undefined };
-          // Use null coalescing to safely access the name property
+          // Properly cast the profiles data to our SellerProfile type
+          const sellerProfile = (item.profiles as SellerProfile) || {};
+          
           return {
             id: item.id,
             type: item.type,
