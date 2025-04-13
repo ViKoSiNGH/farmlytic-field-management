@@ -120,7 +120,7 @@ export function FarmerPanel() {
                       {item.quantity} {item.unit} - ${item.price} per {item.unit}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Supplier: {item.sellerName}
+                      Supplier: {item.sellerName || 'Unknown Supplier'}
                     </p>
                   </div>
                   <Button size="sm">Request</Button>

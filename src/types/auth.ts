@@ -75,6 +75,7 @@ export interface InventoryItem {
   unit: string;
   price: number;
   sellerId: string;
+  sellerName?: string;
   available: boolean;
 }
 
