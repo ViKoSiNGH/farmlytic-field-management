@@ -45,9 +45,9 @@ export function FarmerPanel() {
       
       if (data) {
         const formattedItems: InventoryItem[] = data.map(item => {
-          // Fix for the TypeScript error - explicitly define the profile type
-          const sellerProfile = item.profiles || {};
-          // Use optional chaining to safely access the name property
+          // Fix for the TypeScript error - explicitly define the profile type with specific properties
+          const sellerProfile = item.profiles as { name?: string } || { name: undefined };
+          // Use null coalescing to safely access the name property
           return {
             id: item.id,
             type: item.type,
@@ -56,7 +56,7 @@ export function FarmerPanel() {
             unit: item.unit,
             price: item.price || 0,
             sellerId: item.user_id,
-            sellerName: sellerProfile.name ? sellerProfile.name : 'Unknown Supplier',
+            sellerName: sellerProfile.name || 'Unknown Supplier',
             available: item.available
           };
         });
